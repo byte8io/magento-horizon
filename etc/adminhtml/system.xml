@@ -23,6 +23,14 @@
                     <comment><![CDATA[Base URL of the Byte8 Horizon gateway (e.g. <code>https://horizon.byte8.io</code> or <code>http://host.docker.internal:8085</code> for local dev). Used to push catalog invalidation webhooks. Leave empty to disable outbound webhooks.]]></comment>
                 </field>
             </group>
+            <group id="assistant" translate="label" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>AI Shopping Assistant</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Widget configuration (publishable key, name, color) is fetched automatically from the Horizon gateway using your API key. Enable the assistant for this store in your Horizon dashboard first.</comment>
+                </field>
+            </group>
         </section>
     </system>
 </config>

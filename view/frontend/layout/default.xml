@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="before.body.end">
+            <block class="Magento\Framework\View\Element\Template"
+                   name="byte8.horizon.assistant"
+                   template="Byte8_Horizon::assistant/widget.phtml">
+                <arguments>
+                    <argument name="view_model" xsi:type="object">Byte8\Horizon\ViewModel\AssistantWidget</argument>
+                </arguments>
+            </block>
+        </referenceContainer>
+    </body>
+</page>

@@ -1,0 +1,19 @@
+<?php
+
+/**
+ * Byte8 Horizon — AI Shopping Assistant widget loader.
+ *
+ * Renders a single deferred script tag when the assistant is enabled both in
+ * the Magento configuration and in the merchant's Horizon dashboard.
+ */
+
+declare(strict_types=1);
+
+/** @var Magento\Framework\View\Element\Template $block */
+/** @var Magento\Framework\Escaper $escaper */
+/** @var Byte8\Horizon\ViewModel\AssistantWidget $viewModel */
+$viewModel = $block->getData('view_model');
+?>
+<?php if ($viewModel->isActive()): ?>
+<script src="<?= $escaper->escapeUrl($viewModel->getScriptUrl()) ?>" data-key="<?= $escaper->escapeHtmlAttr($viewModel->getPublishableKey()) ?>" data-name="<?= $escaper->escapeHtmlAttr($viewModel->getAssistantName()) ?>" data-accent="<?= $escaper->escapeHtmlAttr($viewModel->getAccentColor()) ?>" defer></script>
+<?php endif; ?>

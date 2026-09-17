@@ -8,6 +8,9 @@
                 <api_key/>
                 <gateway_url/>
             </general>
+            <assistant>
+                <enabled>0</enabled>
+            </assistant>
         </byte8_horizon>
     </default>
 </config>
