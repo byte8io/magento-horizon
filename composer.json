@@ -11,7 +11,7 @@
         "magento/module-sales": "*",
         "magento/module-customer": "*",
         "magento/module-inventory-api": "*",
-        "byte8/module-core": "^1.0"
+        "byte8/module-core": "*"
     },
     "autoload": {
         "files": [
