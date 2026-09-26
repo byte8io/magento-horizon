@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/byte8io/magento-horizon/compare/v1.2.0...v1.2.1) (2026-09-26)
+
+
+### Documentation
+
+* public README — product links, install, config, architecture ([8930ade](https://github.com/byte8io/magento-horizon/commit/8930adee1833e56ef96860b5f4c729f8ba8d6868))
+
 ## [1.2.0](https://github.com/byte8io/magento-horizon/compare/v1.1.0...v1.2.0) (2026-09-26)
 
 
