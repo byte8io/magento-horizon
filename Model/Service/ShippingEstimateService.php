@@ -44,7 +44,8 @@ class ShippingEstimateService
         private readonly CountryFactory $countryFactory,
         private readonly RegionFactory $regionFactory,
         private readonly ScopeConfigInterface $scopeConfig,
-        private readonly PriceCurrencyInterface $priceCurrency
+        private readonly PriceCurrencyInterface $priceCurrency,
+        private readonly DeliveryWindowResolver $deliveryWindows
     ) {
     }
 
@@ -88,6 +89,8 @@ class ShippingEstimateService
             'methods' => [],
             'unavailable' => [],
             'free_shipping_from' => $this->freeShippingThreshold($storeId),
+            'today' => $this->deliveryWindows->today(),
+            'handling_days' => $this->deliveryWindows->handlingDays(),
         ];
 
         if (!$country->getId()) {
@@ -181,12 +184,26 @@ class ShippingEstimateService
                 ];
                 continue;
             }
+            $window = $this->deliveryWindows->transitWindow(
+                (string) $rate->getCarrier(),
+                (string) $rate->getMethod(),
+                (string) $rate->getMethodTitle(),
+                (string) $rate->getCarrierTitle()
+            );
+            $estimated = $window !== null
+                ? $this->deliveryWindows->project('now', $result['handling_days'], $window)
+                : null;
             $result['methods'][] = [
                 'carrier_code' => (string) $rate->getCarrier(),
                 'carrier_title' => (string) $rate->getCarrierTitle(),
                 'method_code' => (string) $rate->getMethod(),
                 'method_title' => (string) $rate->getMethodTitle(),
                 'price' => round($this->priceCurrency->convert((float) $rate->getPrice(), $store), 2),
+                'transit_min_days' => $window['min_days'] ?? null,
+                'transit_max_days' => $window['max_days'] ?? null,
+                'business_days' => $window['business_days'] ?? null,
+                'transit_source' => $window['source'] ?? null,
+                'estimated_delivery' => $estimated,
             ];
         }
 

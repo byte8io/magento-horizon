@@ -12,6 +12,11 @@
                 <enabled>0</enabled>
                 <knowledge_pages/>
             </assistant>
+            <delivery>
+                <handling_days>1</handling_days>
+                <business_days>1</business_days>
+                <transit_windows/>
+            </delivery>
         </byte8_horizon>
     </default>
 </config>

@@ -11,6 +11,7 @@ This module is **thin by design**: it publishes a read-only, AI-friendly API on 
 ## Features
 
 - **AI-friendly read API** — mounts `/horizon/api/v1/*`: product search, product detail, categories, MSI-aware inventory, orders, customers, **shipping estimates** (live carrier rates for a SKU to a country/postcode, computed on a throwaway quote — nothing is saved) and **store info** (contact details, ships-to countries, active carriers and payment methods, your policy pages as plain text), shaped for AI consumption (no EAV joins, no attribute-set sprawl).
+- **Arrival dates, computed by the module** — order detail carries shipments, tracking numbers and a `delivery_estimate` (earliest/latest arrival in the store timezone) from your **Delivery Estimates** settings: handling time, business-days switch and a per-carrier Transit Times table, with a fallback to times written in method titles such as "Standard Delivery (3-5 days)". The AI only reads the dates; it never counts days itself.
 - **Flat AI index** — a denormalised `byte8_horizon_product_index` table with fulltext search, registered as a native Magento indexer (`byte8_horizon_product`). It takes part in `bin/magento indexer:reindex`, shows up in `indexer:status` and the admin Index Management grid, and supports both *Update on Save* and *Update by Schedule* (recommended for large catalogs and bulk imports: `bin/magento indexer:set-mode schedule byte8_horizon_product`). `bin/magento horizon:reindex` remains as an alias for a full rebuild.
 - **AI Shopping Assistant widget** — one admin toggle injects an on-site chat assistant (works on Luma, Hyvä, and custom themes). Widget configuration is fetched from the gateway automatically — no keys to copy into templates.
 - **Catalog invalidation webhooks** — fire-and-forget notifications to the gateway on product/category/stock changes (3s timeout, never blocks a save).
@@ -46,6 +47,9 @@ bin/magento indexer:reindex byte8_horizon_product
 | **API key** | Paste the key issued when you add the store at [horizon.byte8.io](https://horizon.byte8.io) (shown once — rotate from the dashboard if lost). |
 | **Gateway URL** | `https://horizon.byte8.io` — enables invalidation webhooks and the assistant bootstrap. |
 | **AI Shopping Assistant → Enabled** | Injects the storefront chat widget. Enable the assistant for the store in your Horizon dashboard first. |
+| **Delivery Estimates → Handling Time (days)** | Days from order to dispatch (default 1). Used for orders not yet shipped and for quotes to new shoppers. |
+| **Delivery Estimates → Count Business Days Only** | Skip weekends when adding handling and transit days (default yes). |
+| **Delivery Estimates → Transit Times** | Min/max days in transit per carrier, optionally per method code. Carriers without a row fall back to a time in their method title, e.g. "(3-5 days)". |
 | **AI Shopping Assistant → Knowledge Pages** | CMS pages the assistant may quote for delivery times, returns, refunds, payment and contact questions. Leave empty to auto-detect pages whose title or URL key mentions shipping, delivery, returns, FAQ, customer service, contact, terms or payment. |
 
 Then click **Test connection** in the Horizon dashboard — a green check means agents can reach your catalog. Full walkthrough: [docs.byte8.io/horizon/getting-started/quick-start](https://docs.byte8.io/horizon/getting-started/quick-start).

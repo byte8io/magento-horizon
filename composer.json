@@ -16,6 +16,7 @@
         "magento/module-directory": "*",
         "magento/module-shipping": "*",
         "magento/module-payment": "*",
+        "magento/module-config": "*",
         "byte8/module-core": "*"
     },
     "autoload": {

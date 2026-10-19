@@ -37,6 +37,26 @@
                     <comment><![CDATA[CMS pages the assistant may quote when shoppers ask about delivery times, returns, refunds, payment or how to contact you. Leave empty to auto-detect pages whose title or URL key mentions shipping, delivery, returns, FAQ, customer service, contact, terms or payment. Page content is served as plain text via <code>/horizon/api/v1/store-info</code>.]]></comment>
                 </field>
             </group>
+            <group id="delivery" translate="label comment" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Delivery Estimates</label>
+                <comment>Lets the assistant tell shoppers roughly when an order will arrive. Dates are computed by the module in the store timezone; the AI only reads them.</comment>
+                <field id="handling_days" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Handling Time (days)</label>
+                    <validate>validate-digits</validate>
+                    <comment>Days between an order being placed and being dispatched. Used for orders that haven't shipped yet and for quotes to new shoppers.</comment>
+                </field>
+                <field id="business_days" translate="label comment" type="select" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Count Business Days Only</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Yes = skip Saturdays and Sundays when adding handling and transit days.</comment>
+                </field>
+                <field id="transit_windows" translate="label comment" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Transit Times</label>
+                    <frontend_model>Byte8\Horizon\Block\Adminhtml\Form\Field\TransitWindows</frontend_model>
+                    <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
+                    <comment><![CDATA[Min/max days in transit per carrier (optionally per method code, e.g. <code>express</code>). When a carrier has no row here, the assistant falls back to a time written in the method title, e.g. "Standard Delivery (3-5 days)"; otherwise it gives no date.]]></comment>
+                </field>
+            </group>
         </section>
     </system>
 </config>
