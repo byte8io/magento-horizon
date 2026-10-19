@@ -18,6 +18,14 @@
         <observer name="byte8_horizon_category_delete" instance="Byte8\Horizon\Observer\CategoryDeleteObserver"/>
     </event>
 
+    <!-- Reviews: refresh rating_avg / review_count on the flat index -->
+    <event name="review_save_after">
+        <observer name="byte8_horizon_review_save" instance="Byte8\Horizon\Observer\ReviewChangeObserver"/>
+    </event>
+    <event name="review_delete_after">
+        <observer name="byte8_horizon_review_delete" instance="Byte8\Horizon\Observer\ReviewChangeObserver"/>
+    </event>
+
     <!-- Inventory: legacy stock item save (also fires under MSI back-compat) -->
     <event name="cataloginventory_stock_item_save_after">
         <observer name="byte8_horizon_stock_item_save" instance="Byte8\Horizon\Observer\StockItemSaveObserver"/>

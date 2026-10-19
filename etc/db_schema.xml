@@ -43,6 +43,10 @@
                 comment="Magento visibility (1=not visible, 2=catalog, 3=search, 4=both)"/>
         <column xsi:type="smallint" name="status" unsigned="true" nullable="false" default="1"
                 comment="Magento status (1=enabled, 2=disabled)"/>
+        <column xsi:type="decimal" name="rating_avg" precision="3" scale="2" nullable="true"
+                comment="Average approved review rating on a 1-5 scale (NULL when unrated)"/>
+        <column xsi:type="int" name="review_count" unsigned="true" nullable="false" default="0"
+                comment="Number of approved reviews"/>
         <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false"
                 default="CURRENT_TIMESTAMP" comment="Last index update"/>
 

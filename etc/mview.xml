@@ -19,6 +19,9 @@
             <table name="catalog_product_entity_media_gallery_value" entity_column="entity_id"/>
             <table name="catalog_category_product" entity_column="product_id"/>
             <table name="cataloginventory_stock_item" entity_column="product_id"/>
+            <!-- entity_pk_value is the product id for product reviews; rows for other
+                 review entity types resolve to nothing and are harmless. -->
+            <table name="review" entity_column="entity_pk_value"/>
         </subscriptions>
     </view>
 </config>

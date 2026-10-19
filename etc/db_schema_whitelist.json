@@ -1,0 +1,36 @@
+{
+    "byte8_horizon_product_index": {
+        "column": {
+            "product_id": true,
+            "sku": true,
+            "name": true,
+            "short_description": true,
+            "description": true,
+            "product_type": true,
+            "price": true,
+            "special_price": true,
+            "currency_code": true,
+            "is_in_stock": true,
+            "qty": true,
+            "url_path": true,
+            "main_image_url": true,
+            "category_ids_json": true,
+            "attributes_json": true,
+            "visibility": true,
+            "status": true,
+            "rating_avg": true,
+            "review_count": true,
+            "updated_at": true
+        },
+        "index": {
+            "BYTE8_HORIZON_PRODUCT_INDEX_NAME_SKU_SHORT_DESCRIPTION": true,
+            "BYTE8_HORIZON_PRODUCT_INDEX_PRODUCT_TYPE": true,
+            "BYTE8_HORIZON_PRODUCT_INDEX_IS_IN_STOCK": true,
+            "BYTE8_HORIZON_PRODUCT_INDEX_STATUS_VISIBILITY": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "BYTE8_HORIZON_PRODUCT_INDEX_SKU": true
+        }
+    }
+}

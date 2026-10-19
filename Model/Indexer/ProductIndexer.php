@@ -6,6 +6,7 @@ namespace Byte8\Horizon\Model\Indexer;
 
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product\Visibility;
+use Byte8\Horizon\Model\Review\SummaryProvider;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Framework\App\ResourceConnection;
@@ -22,7 +23,8 @@ class ProductIndexer
         private readonly StockRegistryInterface $stockRegistry,
         private readonly StoreManagerInterface $storeManager,
         private readonly ResourceConnection $resourceConnection,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly SummaryProvider $reviewSummary
     ) {
     }
 
@@ -47,11 +49,12 @@ class ProductIndexer
         $collection->addAttributeToFilter('status', \Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED);
 
         $currency = $this->storeManager->getStore()->getBaseCurrencyCode();
+        $ratings = $this->reviewSummary->forAllProducts();
         $count = 0;
         $batch = [];
 
         foreach ($collection as $product) {
-            $batch[] = $this->buildRow($product, $currency);
+            $batch[] = $this->buildRow($product, $currency, $ratings[(int) $product->getId()] ?? null);
             $count++;
 
             if (count($batch) >= self::BATCH_SIZE) {
@@ -131,10 +134,11 @@ class ProductIndexer
         $collection->addAttributeToFilter('status', \Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED);
 
         $currency = $this->storeManager->getStore()->getBaseCurrencyCode();
+        $ratings = $this->reviewSummary->forProductIds($productIds);
         $rows = [];
 
         foreach ($collection as $product) {
-            $rows[] = $this->buildRow($product, $currency);
+            $rows[] = $this->buildRow($product, $currency, $ratings[(int) $product->getId()] ?? null);
         }
 
         if (!empty($rows)) {
@@ -142,7 +146,10 @@ class ProductIndexer
         }
     }
 
-    private function buildRow(\Magento\Catalog\Model\Product $product, string $currency): array
+    /**
+     * @param array{avg: float|null, count: int}|null $rating Approved-review summary for this product
+     */
+    private function buildRow(\Magento\Catalog\Model\Product $product, string $currency, ?array $rating): array
     {
         // Stock info
         $isInStock = false;
@@ -193,6 +200,8 @@ class ProductIndexer
             'attributes_json' => !empty($attributes) ? json_encode($attributes) : null,
             'visibility' => (int) $product->getVisibility(),
             'status' => (int) $product->getStatus(),
+            'rating_avg' => $rating['avg'] ?? null,
+            'review_count' => $rating['count'] ?? 0,
         ];
     }
 }

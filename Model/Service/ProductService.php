@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Byte8\Horizon\Model\Service;
 
 use Byte8\Horizon\Model\ResourceModel\ProductIndex\CollectionFactory;
+use Byte8\Horizon\Model\Review\SummaryProvider;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Api\CategoryRepositoryInterface;
 use Magento\Catalog\Helper\Image as ImageHelper;
@@ -19,7 +20,8 @@ class ProductService
         private readonly CategoryRepositoryInterface $categoryRepository,
         private readonly ImageHelper $imageHelper,
         private readonly StoreManagerInterface $storeManager,
-        private readonly ResourceConnection $resourceConnection
+        private readonly ResourceConnection $resourceConnection,
+        private readonly SummaryProvider $reviewSummary
     ) {
     }
 
@@ -85,6 +87,8 @@ class ProductService
                 'currency' => $item->getData('currency_code'),
                 'in_stock' => (bool) $item->getData('is_in_stock'),
                 'url_path' => $item->getData('url_path') ?? '',
+                'rating_avg' => $item->getData('rating_avg') !== null ? (float) $item->getData('rating_avg') : null,
+                'review_count' => (int) ($item->getData('review_count') ?? 0),
             ];
         }
 
@@ -167,6 +171,9 @@ class ProductService
             }
         }
 
+        // Reviews (approved only, live — not from the index)
+        $rating = $this->reviewSummary->forProductIds([(int) $product->getId()])[(int) $product->getId()] ?? null;
+
         // Stock
         $stockItem = $product->getExtensionAttributes()?->getStockItem();
         $qty = $stockItem ? (float) $stockItem->getQty() : null;
@@ -188,6 +195,8 @@ class ProductService
             'images' => $images,
             'categories' => $categories,
             'attributes' => $attributes,
+            'rating_avg' => $rating['avg'] ?? null,
+            'review_count' => $rating['count'] ?? 0,
         ];
     }
 
