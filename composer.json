@@ -15,6 +15,7 @@
         "magento/module-cms": "*",
         "magento/module-directory": "*",
         "magento/module-shipping": "*",
+        "magento/module-sales-rule": "*",
         "magento/module-payment": "*",
         "magento/module-config": "*",
         "byte8/module-core": "*"

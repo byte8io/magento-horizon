@@ -15,6 +15,8 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Pricing\PriceCurrencyInterface;
 use Magento\Quote\Model\Quote;
 use Magento\Quote\Model\QuoteFactory;
+use Magento\SalesRule\Api\Data\RuleInterface;
+use Magento\SalesRule\Api\RuleRepositoryInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
@@ -45,7 +47,8 @@ class ShippingEstimateService
         private readonly RegionFactory $regionFactory,
         private readonly ScopeConfigInterface $scopeConfig,
         private readonly PriceCurrencyInterface $priceCurrency,
-        private readonly DeliveryWindowResolver $deliveryWindows
+        private readonly DeliveryWindowResolver $deliveryWindows,
+        private readonly RuleRepositoryInterface $ruleRepository
     ) {
     }
 
@@ -89,6 +92,7 @@ class ShippingEstimateService
             'methods' => [],
             'unavailable' => [],
             'free_shipping_from' => $this->freeShippingThreshold($storeId),
+            'free_shipping_reason' => null,
             'today' => $this->deliveryWindows->today(),
             'handling_days' => $this->deliveryWindows->handlingDays(),
         ];
@@ -209,6 +213,13 @@ class ShippingEstimateService
 
         usort($result['methods'], static fn (array $a, array $b): int => $a['price'] <=> $b['price']);
 
+        $result['free_shipping_reason'] = $this->freeShippingReason(
+            $address,
+            $result['methods'],
+            $result['free_shipping_from'],
+            (float) $result['subtotal']
+        );
+
         if ($result['methods'] === []) {
             return $this->fail(
                 $result,
@@ -265,6 +276,55 @@ class ShippingEstimateService
         } else {
             $address->setRegion($region);
         }
+    }
+
+    /**
+     * Explains why Magento offered the free shipping method, so an AI caller
+     * does not read "free from 120" next to a free quote on a 59 basket as a
+     * misconfiguration. Magento grants it either because the basket reached
+     * the carrier threshold or because a cart price rule (e.g. "Spend $50 or
+     * more - shipping is free!") flagged the items; rule ids are left on the
+     * address by the discount collector.
+     *
+     * @param array<int, array<string, mixed>> $methods
+     * @return array{source: string, rule: string|null}|null
+     */
+    private function freeShippingReason(
+        Quote\Address $address,
+        array $methods,
+        ?float $threshold,
+        float $subtotal
+    ): ?array {
+        $offered = false;
+        foreach ($methods as $method) {
+            if ($method['carrier_code'] === 'freeshipping') {
+                $offered = true;
+                break;
+            }
+        }
+        if (!$offered) {
+            return null;
+        }
+        if ($threshold !== null && $subtotal >= $threshold) {
+            return ['source' => 'threshold', 'rule' => null];
+        }
+
+        $ruleIds = array_filter(array_map('intval', explode(',', (string) $address->getAppliedRuleIds())));
+        foreach ($ruleIds as $ruleId) {
+            try {
+                $rule = $this->ruleRepository->getById($ruleId);
+            } catch (NoSuchEntityException) {
+                continue;
+            }
+            $freeShipping = $rule->getSimpleFreeShipping();
+            if ($freeShipping !== null && (string) $freeShipping !== RuleInterface::FREE_SHIPPING_NONE
+                && (string) $freeShipping !== '0'
+            ) {
+                return ['source' => 'cart_rule', 'rule' => (string) $rule->getName()];
+            }
+        }
+
+        return ['source' => 'other', 'rule' => null];
     }
 
     private function freeShippingThreshold(int $storeId): ?float
