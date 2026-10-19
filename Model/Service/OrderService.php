@@ -146,6 +146,7 @@ class OrderService
         // Payment
         $payment = $order->getPayment();
         $paymentMethod = $payment ? ($payment->getAdditionalInformation('method_title') ?? $payment->getMethod()) : '';
+        $history = $this->historyFacts($order);
 
         return [
             'entity_id' => (int) $order->getEntityId(),
@@ -167,6 +168,10 @@ class OrderService
             'billing_address' => $billingAddress,
             'payment_method' => $paymentMethod,
             'payment' => $this->paymentSummary($order, $paymentMethod),
+            'invoices' => $this->formatInvoices($order),
+            'refunds' => $this->formatRefunds($order),
+            'canceled_at' => $history['canceled_at'],
+            'last_comment' => $history['last_comment'],
             'shipping_method' => $order->getShippingDescription() ?? '',
             'shipping_method_code' => $order->getShippingMethod() ?? '',
             'created_at' => $order->getCreatedAt() ?? '',
@@ -223,14 +228,115 @@ class OrderService
             $status = 'unpaid';
         }
 
+        $payment = $order->getPayment();
+        $refundedOnline = $payment ? (float) ($payment->getBaseAmountRefundedOnline() ?? 0) : 0.0;
+        $refundedBase = $payment ? (float) ($payment->getBaseAmountRefunded() ?? 0) : 0.0;
+
         return [
             'method' => $methodTitle,
             'status' => $status,
             'total_paid' => $paid,
             'total_due' => $due,
             'total_refunded' => $refunded,
+            'refunded_online' => $refundedOnline,
+            'refunded_offline' => max(0.0, round($refundedBase - $refundedOnline, 2)),
             'paid_at' => $paidAt,
         ];
+    }
+
+    /**
+     * Invoices raised on the order (number, date, state, amount) — enough for
+     * "where is my invoice?"; the document itself stays in the account area.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function formatInvoices(OrderInterface $order): array
+    {
+        $states = [
+            \Magento\Sales\Model\Order\Invoice::STATE_OPEN => 'open',
+            \Magento\Sales\Model\Order\Invoice::STATE_PAID => 'paid',
+            \Magento\Sales\Model\Order\Invoice::STATE_CANCELED => 'canceled',
+        ];
+        $out = [];
+        foreach ($order->getInvoiceCollection() as $invoice) {
+            $out[] = [
+                'increment_id' => (string) $invoice->getIncrementId(),
+                'created_at' => (string) $invoice->getCreatedAt(),
+                'state' => $states[(int) $invoice->getState()] ?? 'unknown',
+                'grand_total' => (float) $invoice->getGrandTotal(),
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * Credit memos (refunds): date, amount, what it covered. Whether the money
+     * went back online or was arranged offline is on the payment summary.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function formatRefunds(OrderInterface $order): array
+    {
+        $states = [
+            \Magento\Sales\Model\Order\Creditmemo::STATE_OPEN => 'open',
+            \Magento\Sales\Model\Order\Creditmemo::STATE_REFUNDED => 'refunded',
+            \Magento\Sales\Model\Order\Creditmemo::STATE_CANCELED => 'canceled',
+        ];
+        $out = [];
+        foreach ($order->getCreditmemosCollection() as $memo) {
+            $items = [];
+            foreach ($memo->getAllItems() as $item) {
+                $orderItem = $item->getOrderItem();
+                if ((float) $item->getQty() <= 0 || ($orderItem && $orderItem->getParentItemId())) {
+                    continue;
+                }
+                $items[] = ['sku' => (string) $item->getSku(), 'qty' => (float) $item->getQty()];
+            }
+            $out[] = [
+                'increment_id' => (string) $memo->getIncrementId(),
+                'created_at' => (string) $memo->getCreatedAt(),
+                'state' => $states[(int) $memo->getState()] ?? 'unknown',
+                'grand_total' => (float) $memo->getGrandTotal(),
+                'shipping_amount' => (float) ($memo->getShippingAmount() ?? 0),
+                'adjustment_positive' => (float) ($memo->getAdjustmentPositive() ?? 0),
+                'adjustment_negative' => (float) ($memo->getAdjustmentNegative() ?? 0),
+                'items' => $items,
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * Facts from the status history: when the order was cancelled and the most
+     * recent comment the merchant chose to make visible to the customer.
+     * Internal (admin-only) comments are never exposed.
+     *
+     * @return array{canceled_at: ?string, last_comment: ?string}
+     */
+    private function historyFacts(OrderInterface $order): array
+    {
+        $canceledAt = null;
+        $lastComment = null;
+        $isCanceled = $order->getState() === Order::STATE_CANCELED;
+        foreach ($order->getStatusHistories() ?? [] as $entry) {
+            $createdAt = (string) $entry->getCreatedAt();
+            if ($isCanceled
+                && $entry->getStatus() === $order->getStatus()
+                && ($canceledAt === null || $createdAt > $canceledAt)
+            ) {
+                $canceledAt = $createdAt;
+            }
+            $comment = trim((string) $entry->getComment());
+            if ($comment !== '' && (int) $entry->getIsVisibleOnFront() === 1
+                && ($lastComment === null || $createdAt > $lastComment['at'])
+            ) {
+                $lastComment = ['at' => $createdAt, 'text' => $comment];
+            }
+        }
+        if ($isCanceled && $canceledAt === null) {
+            $canceledAt = (string) $order->getUpdatedAt();
+        }
+        return ['canceled_at' => $canceledAt, 'last_comment' => $lastComment['text'] ?? null];
     }
 
     /**
