@@ -10,7 +10,10 @@ use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Api\CategoryRepositoryInterface;
 use Magento\Catalog\Helper\Image as ImageHelper;
 use Magento\Store\Model\StoreManagerInterface;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\ResourceConnection;
+use Magento\Store\Api\Data\StoreInterface;
+use Magento\Store\Model\ScopeInterface;
 
 class ProductService
 {
@@ -21,7 +24,8 @@ class ProductService
         private readonly ImageHelper $imageHelper,
         private readonly StoreManagerInterface $storeManager,
         private readonly ResourceConnection $resourceConnection,
-        private readonly SummaryProvider $reviewSummary
+        private readonly SummaryProvider $reviewSummary,
+        private readonly ScopeConfigInterface $scopeConfig
     ) {
     }
 
@@ -74,7 +78,8 @@ class ProductService
         $collection->setPageSize($limit);
         $collection->setCurPage($page);
 
-        $baseUrl = $this->storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA);
+        $store = $this->storeManager->getStore();
+        $baseUrl = $store->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA);
 
         $products = [];
         foreach ($collection as $item) {
@@ -87,6 +92,7 @@ class ProductService
                 'currency' => $item->getData('currency_code'),
                 'in_stock' => (bool) $item->getData('is_in_stock'),
                 'url_path' => $item->getData('url_path') ?? '',
+                'url' => $this->productUrl((string) ($item->getData('url_path') ?? ''), $store),
                 'rating_avg' => $item->getData('rating_avg') !== null ? (float) $item->getData('rating_avg') : null,
                 'review_count' => (int) ($item->getData('review_count') ?? 0),
             ];
@@ -192,12 +198,34 @@ class ProductService
             'in_stock' => $inStock,
             'qty' => $qty,
             'url_path' => $product->getUrlKey() ?? '',
+            'url' => $this->productUrl((string) ($product->getUrlKey() ?? ''), $store),
             'images' => $images,
             'categories' => $categories,
             'attributes' => $attributes,
             'rating_avg' => $rating['avg'] ?? null,
             'review_count' => $rating['count'] ?? 0,
         ];
+    }
+
+    /**
+     * Absolute storefront URL for a product: store base URL (incl. store code
+     * when "Add Store Code to URLs" is on) + URL key + the configured product
+     * URL suffix. Empty when the product has no URL key.
+     */
+    private function productUrl(string $urlKey, StoreInterface $store): string
+    {
+        if ($urlKey === '') {
+            return '';
+        }
+        $suffix = (string) $this->scopeConfig->getValue(
+            'catalog/seo/product_url_suffix',
+            ScopeInterface::SCOPE_STORE,
+            $store->getId()
+        );
+        if ($suffix !== '' && $suffix[0] !== '.') {
+            $suffix = '.' . $suffix;
+        }
+        return rtrim($store->getBaseUrl(), '/') . '/' . ltrim($urlKey, '/') . $suffix;
     }
 
     /**
