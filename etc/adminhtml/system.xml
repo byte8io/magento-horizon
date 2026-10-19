@@ -30,6 +30,12 @@
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     <comment>Widget configuration (publishable key, name, color) is fetched automatically from the Horizon gateway using your API key. Enable the assistant for this store in your Horizon dashboard first.</comment>
                 </field>
+                <field id="knowledge_pages" translate="label comment" type="multiselect" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                    <label>Knowledge Pages</label>
+                    <source_model>Byte8\Horizon\Model\Config\Source\CmsPage</source_model>
+                    <can_be_empty>1</can_be_empty>
+                    <comment><![CDATA[CMS pages the assistant may quote when shoppers ask about delivery times, returns, refunds, payment or how to contact you. Leave empty to auto-detect pages whose title or URL key mentions shipping, delivery, returns, FAQ, customer service, contact, terms or payment. Page content is served as plain text via <code>/horizon/api/v1/store-info</code>.]]></comment>
+                </field>
             </group>
         </section>
     </system>

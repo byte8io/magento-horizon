@@ -10,6 +10,7 @@
             </general>
             <assistant>
                 <enabled>0</enabled>
+                <knowledge_pages/>
             </assistant>
         </byte8_horizon>
     </default>

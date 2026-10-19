@@ -11,6 +11,11 @@
         "magento/module-sales": "*",
         "magento/module-customer": "*",
         "magento/module-inventory-api": "*",
+        "magento/module-quote": "*",
+        "magento/module-cms": "*",
+        "magento/module-directory": "*",
+        "magento/module-shipping": "*",
+        "magento/module-payment": "*",
         "byte8/module-core": "*"
     },
     "autoload": {

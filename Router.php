@@ -20,6 +20,8 @@ class Router implements RouterInterface
         'horizon/api/v1/inventory'   => Controller\Api\Inventory::class,
         'horizon/api/v1/orders'      => Controller\Api\Orders::class,
         'horizon/api/v1/customers'   => Controller\Api\Customers::class,
+        'horizon/api/v1/shipping/estimate' => Controller\Api\ShippingEstimate::class,
+        'horizon/api/v1/store-info'  => Controller\Api\StoreInfo::class,
     ];
 
     public function __construct(
