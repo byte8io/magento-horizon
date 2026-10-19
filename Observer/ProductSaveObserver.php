@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Byte8\Horizon\Observer;
 
 use Byte8\Horizon\Model\Config;
-use Byte8\Horizon\Model\Indexer\ProductIndexer;
+use Byte8\Horizon\Model\Indexer\Dispatcher;
 use Byte8\Horizon\Model\Webhook\Notifier;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
@@ -13,7 +13,7 @@ use Magento\Framework\Event\ObserverInterface;
 class ProductSaveObserver implements ObserverInterface
 {
     public function __construct(
-        private readonly ProductIndexer $productIndexer,
+        private readonly Dispatcher $indexerDispatcher,
         private readonly Config $config,
         private readonly Notifier $notifier
     ) {
@@ -31,7 +31,7 @@ class ProductSaveObserver implements ObserverInterface
         }
 
         $productId = (int) $product->getId();
-        $this->productIndexer->reindexByIds([$productId]);
+        $this->indexerDispatcher->reindexIds([$productId]);
 
         $event = $product->isObjectNew()
             ? Notifier::EVENT_PRODUCT_CREATED

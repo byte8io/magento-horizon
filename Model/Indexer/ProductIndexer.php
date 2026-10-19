@@ -28,6 +28,9 @@ class ProductIndexer
 
     /**
      * Full reindex: truncate and rebuild the entire flat index.
+     *
+     * Normally invoked through the framework (`indexer:reindex byte8_horizon_product`
+     * → {@see \Byte8\Horizon\Model\Indexer\Product\Action::executeFull()}).
      */
     public function reindexAll(): int
     {
@@ -68,7 +71,7 @@ class ProductIndexer
     /**
      * Partial reindex by SKU. Resolves each SKU to its product_id via
      * catalog_product_entity, calls reindexByIds, and returns the resolved IDs
-     * so the caller (e.g. an MSI plugin) can pass them to the webhook Notifier.
+     * so the caller can pass them to the webhook Notifier.
      *
      * SKUs that don't resolve are silently dropped.
      *
@@ -76,6 +79,19 @@ class ProductIndexer
      * @return int[]
      */
     public function reindexBySkus(array $skus): array
+    {
+        $productIds = $this->resolveProductIds($skus);
+        $this->reindexByIds($productIds);
+        return $productIds;
+    }
+
+    /**
+     * Resolve SKUs to product IDs via catalog_product_entity. Unknown SKUs are dropped.
+     *
+     * @param string[] $skus
+     * @return int[]
+     */
+    public function resolveProductIds(array $skus): array
     {
         $skus = array_values(array_unique(array_filter($skus, 'strlen')));
         if (empty($skus)) {
@@ -87,17 +103,12 @@ class ProductIndexer
             ->from($this->resourceConnection->getTableName('catalog_product_entity'), ['entity_id'])
             ->where('sku IN (?)', $skus);
 
-        $productIds = array_map('intval', $connection->fetchCol($select));
-        if (empty($productIds)) {
-            return [];
-        }
-
-        $this->reindexByIds($productIds);
-        return $productIds;
+        return array_map('intval', $connection->fetchCol($select));
     }
 
     /**
-     * Partial reindex: update specific product IDs.
+     * Partial reindex: update specific product IDs. Products that no longer
+     * exist or are disabled lose their row, so this doubles as the delete path.
      */
     public function reindexByIds(array $productIds): void
     {

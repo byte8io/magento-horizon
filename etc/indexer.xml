@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Indexer/etc/indexer.xsd">
+    <!-- Registers the Horizon flat AI product index as a native Magento indexer so it
+         takes part in `indexer:reindex`, `indexer:status`, Update on Save / Update by
+         Schedule modes and the admin Index Management grid. -->
+    <indexer id="byte8_horizon_product"
+             view_id="byte8_horizon_product"
+             class="Byte8\Horizon\Model\Indexer\Product\Action">
+        <title translate="true">Horizon AI Product Index</title>
+        <description translate="true">Flat product index served to AI agents through the Byte8 Horizon gateway</description>
+    </indexer>
+</config>

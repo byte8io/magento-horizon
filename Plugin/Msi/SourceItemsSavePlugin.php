@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Byte8\Horizon\Plugin\Msi;
 
 use Byte8\Horizon\Model\Config;
+use Byte8\Horizon\Model\Indexer\Dispatcher;
 use Byte8\Horizon\Model\Indexer\ProductIndexer;
 use Byte8\Horizon\Model\Webhook\Notifier;
 use Magento\InventoryApi\Api\Data\SourceItemInterface;
@@ -23,6 +24,7 @@ class SourceItemsSavePlugin
     public function __construct(
         private readonly Config $config,
         private readonly ProductIndexer $productIndexer,
+        private readonly Dispatcher $indexerDispatcher,
         private readonly Notifier $notifier
     ) {
     }
@@ -50,7 +52,10 @@ class SourceItemsSavePlugin
             return $result;
         }
 
-        $productIds = $this->productIndexer->reindexBySkus($skus);
+        // inventory_source_item is keyed by SKU, so mview has no trigger on it;
+        // the Dispatcher queues these IDs itself when the indexer is scheduled.
+        $productIds = $this->productIndexer->resolveProductIds($skus);
+        $this->indexerDispatcher->reindexIds($productIds, false);
         if (!empty($productIds)) {
             $this->notifier->notify(Notifier::EVENT_INVENTORY_UPDATED, $productIds);
         }

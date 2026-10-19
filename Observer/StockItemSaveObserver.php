@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Byte8\Horizon\Observer;
 
 use Byte8\Horizon\Model\Config;
-use Byte8\Horizon\Model\Indexer\ProductIndexer;
+use Byte8\Horizon\Model\Indexer\Dispatcher;
 use Byte8\Horizon\Model\Webhook\Notifier;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
@@ -23,7 +23,7 @@ class StockItemSaveObserver implements ObserverInterface
 {
     public function __construct(
         private readonly Config $config,
-        private readonly ProductIndexer $productIndexer,
+        private readonly Dispatcher $indexerDispatcher,
         private readonly Notifier $notifier
     ) {
     }
@@ -44,7 +44,7 @@ class StockItemSaveObserver implements ObserverInterface
             return;
         }
 
-        $this->productIndexer->reindexByIds([$productId]);
+        $this->indexerDispatcher->reindexIds([$productId]);
         $this->notifier->notify(Notifier::EVENT_INVENTORY_UPDATED, [$productId]);
     }
 }

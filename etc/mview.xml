@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Mview/etc/mview.xsd">
+    <!-- Change log for "Update by Schedule" mode. Every table that feeds a row of
+         byte8_horizon_product_index is subscribed; Magento installs triggers on them
+         and the indexer cron drains the changelog in batches.
+
+         MSI `inventory_source_item` is keyed by SKU, not product_id, so it cannot be
+         subscribed here; the MSI plugins in Plugin/Msi reindex those products directly
+         in either mode. -->
+    <view id="byte8_horizon_product" class="Byte8\Horizon\Model\Indexer\Product\Action" group="indexer">
+        <subscriptions>
+            <table name="catalog_product_entity" entity_column="entity_id"/>
+            <table name="catalog_product_entity_datetime" entity_column="entity_id"/>
+            <table name="catalog_product_entity_decimal" entity_column="entity_id"/>
+            <table name="catalog_product_entity_int" entity_column="entity_id"/>
+            <table name="catalog_product_entity_text" entity_column="entity_id"/>
+            <table name="catalog_product_entity_varchar" entity_column="entity_id"/>
+            <table name="catalog_product_entity_media_gallery_value" entity_column="entity_id"/>
+            <table name="catalog_category_product" entity_column="product_id"/>
+            <table name="cataloginventory_stock_item" entity_column="product_id"/>
+        </subscriptions>
+    </view>
+</config>
