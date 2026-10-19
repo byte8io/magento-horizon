@@ -166,6 +166,7 @@ class OrderService
             'shipping_address' => $shippingAddress,
             'billing_address' => $billingAddress,
             'payment_method' => $paymentMethod,
+            'payment' => $this->paymentSummary($order, $paymentMethod),
             'shipping_method' => $order->getShippingDescription() ?? '',
             'shipping_method_code' => $order->getShippingMethod() ?? '',
             'created_at' => $order->getCreatedAt() ?? '',
@@ -174,6 +175,61 @@ class OrderService
             'fulfilment_status' => $fulfilment,
             'shipped_at' => $shippedAt,
             'delivery_estimate' => $this->deliveryEstimate($order, $fulfilment, $shippedAt),
+        ];
+    }
+
+    /**
+     * Payment position of the order, so an assistant can answer "is it paid?"
+     * without seeing card or account details. `status` is one of: paid,
+     * partially_paid, unpaid, awaiting_payment, payment_review, refunded,
+     * partially_refunded, canceled, free.
+     *
+     * @return array<string, mixed>
+     */
+    private function paymentSummary(OrderInterface $order, string $methodTitle): array
+    {
+        $grandTotal = (float) $order->getGrandTotal();
+        $paid = (float) ($order->getTotalPaid() ?? 0);
+        $due = (float) ($order->getTotalDue() ?? 0);
+        $refunded = (float) ($order->getTotalRefunded() ?? 0);
+        $state = (string) $order->getState();
+
+        $paidAt = null;
+        foreach ($order->getInvoiceCollection() as $invoice) {
+            if ((int) $invoice->getState() === \Magento\Sales\Model\Order\Invoice::STATE_PAID
+                && ($paidAt === null || $invoice->getCreatedAt() > $paidAt)
+            ) {
+                $paidAt = $invoice->getCreatedAt();
+            }
+        }
+
+        if ($state === Order::STATE_CANCELED) {
+            $status = 'canceled';
+        } elseif ($grandTotal <= 0.009) {
+            $status = 'free';
+        } elseif ($refunded > 0 && $refunded >= $paid - 0.009) {
+            $status = 'refunded';
+        } elseif ($refunded > 0) {
+            $status = 'partially_refunded';
+        } elseif ($due <= 0.009 && $paid >= $grandTotal - 0.009) {
+            $status = 'paid';
+        } elseif ($paid > 0) {
+            $status = 'partially_paid';
+        } elseif ($state === Order::STATE_PAYMENT_REVIEW) {
+            $status = 'payment_review';
+        } elseif ($state === Order::STATE_NEW || $state === Order::STATE_PENDING_PAYMENT) {
+            $status = 'awaiting_payment';
+        } else {
+            $status = 'unpaid';
+        }
+
+        return [
+            'method' => $methodTitle,
+            'status' => $status,
+            'total_paid' => $paid,
+            'total_due' => $due,
+            'total_refunded' => $refunded,
+            'paid_at' => $paidAt,
         ];
     }
 
