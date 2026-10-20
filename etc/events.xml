@@ -26,6 +26,11 @@
         <observer name="byte8_horizon_review_delete" instance="Byte8\Horizon\Observer\ReviewChangeObserver"/>
     </event>
 
+    <!-- Orders: refresh sold_qty (best-seller ranking) for the ordered products -->
+    <event name="sales_order_place_after">
+        <observer name="byte8_horizon_order_place" instance="Byte8\Horizon\Observer\OrderPlaceObserver"/>
+    </event>
+
     <!-- Inventory: legacy stock item save (also fires under MSI back-compat) -->
     <event name="cataloginventory_stock_item_save_after">
         <observer name="byte8_horizon_stock_item_save" instance="Byte8\Horizon\Observer\StockItemSaveObserver"/>

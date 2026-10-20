@@ -22,6 +22,8 @@
             <!-- entity_pk_value is the product id for product reviews; rows for other
                  review entity types resolve to nothing and are harmless. -->
             <table name="review" entity_column="entity_pk_value"/>
+            <!-- sold_qty: order lines reference the product directly. -->
+            <table name="sales_order_item" entity_column="product_id"/>
         </subscriptions>
     </view>
 </config>

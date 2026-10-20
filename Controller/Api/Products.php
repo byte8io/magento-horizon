@@ -29,6 +29,7 @@ class Products extends AbstractAction
         $categoryId = $this->getStringParam('category_id');
         $productType = $this->getStringParam('product_type');
         $inStockOnly = $this->getBoolParam('in_stock_only', false);
+        $sort = $this->getStringParam('sort');
 
         $data = $this->productService->search(
             $query,
@@ -36,7 +37,8 @@ class Products extends AbstractAction
             $page,
             $categoryId !== null ? (int) $categoryId : null,
             $productType,
-            $inStockOnly
+            $inStockOnly,
+            $sort
         );
 
         return $result->setData($data);

@@ -20,7 +20,8 @@
             "status": true,
             "rating_avg": true,
             "review_count": true,
-            "updated_at": true
+            "updated_at": true,
+            "sold_qty": true
         },
         "index": {
             "BYTE8_HORIZON_PRODUCT_INDEX_NAME_SKU_SHORT_DESCRIPTION": true,

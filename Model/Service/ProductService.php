@@ -6,6 +6,7 @@ namespace Byte8\Horizon\Model\Service;
 
 use Byte8\Horizon\Model\ResourceModel\ProductIndex\CollectionFactory;
 use Byte8\Horizon\Model\Review\SummaryProvider;
+use Byte8\Horizon\Model\Sales\SoldSummaryProvider;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Api\CategoryRepositoryInterface;
 use Magento\Catalog\Helper\Image as ImageHelper;
@@ -25,6 +26,7 @@ class ProductService
         private readonly StoreManagerInterface $storeManager,
         private readonly ResourceConnection $resourceConnection,
         private readonly SummaryProvider $reviewSummary,
+        private readonly SoldSummaryProvider $soldSummary,
         private readonly ScopeConfigInterface $scopeConfig
     ) {
     }
@@ -39,7 +41,8 @@ class ProductService
         int $page = 1,
         ?int $categoryId = null,
         ?string $productType = null,
-        bool $inStockOnly = false
+        bool $inStockOnly = false,
+        ?string $sort = null
     ): array {
         $collection = $this->collectionFactory->create();
 
@@ -73,6 +76,8 @@ class ProductService
             $collection->addFieldToFilter('is_in_stock', 1);
         }
 
+        $this->applySort($collection, $sort);
+
         $totalCount = $collection->getSize();
 
         $collection->setPageSize($limit);
@@ -95,6 +100,7 @@ class ProductService
                 'url' => $this->productUrl((string) ($item->getData('url_path') ?? ''), $store),
                 'rating_avg' => $item->getData('rating_avg') !== null ? (float) $item->getData('rating_avg') : null,
                 'review_count' => (int) ($item->getData('review_count') ?? 0),
+                'sold_qty' => (float) ($item->getData('sold_qty') ?? 0),
             ];
         }
 
@@ -179,6 +185,7 @@ class ProductService
 
         // Reviews (approved only, live — not from the index)
         $rating = $this->reviewSummary->forProductIds([(int) $product->getId()])[(int) $product->getId()] ?? null;
+        $soldQty = $this->soldSummary->forProductIds([(int) $product->getId()])[(int) $product->getId()] ?? 0.0;
 
         // Stock
         $stockItem = $product->getExtensionAttributes()?->getStockItem();
@@ -204,7 +211,36 @@ class ProductService
             'attributes' => $attributes,
             'rating_avg' => $rating['avg'] ?? null,
             'review_count' => $rating['count'] ?? 0,
+            'sold_qty' => $soldQty,
         ];
+    }
+
+    /**
+     * Ranked browsing for "best sellers" / "top rated" style questions.
+     * Unknown or null sort keeps the collection's natural (relevance) order.
+     */
+    private function applySort(\Byte8\Horizon\Model\ResourceModel\ProductIndex\Collection $collection, ?string $sort): void
+    {
+        switch ($sort) {
+            case 'best_selling':
+                $collection->addFieldToFilter('sold_qty', ['gt' => 0]);
+                $collection->setOrder('sold_qty', 'DESC');
+                $collection->setOrder('rating_avg', 'DESC');
+                break;
+            case 'top_rated':
+                $collection->addFieldToFilter('review_count', ['gt' => 0]);
+                $collection->setOrder('rating_avg', 'DESC');
+                $collection->setOrder('review_count', 'DESC');
+                break;
+            case 'price_asc':
+                $collection->setOrder('price', 'ASC');
+                break;
+            case 'price_desc':
+                $collection->setOrder('price', 'DESC');
+                break;
+            default:
+                break;
+        }
     }
 
     /**

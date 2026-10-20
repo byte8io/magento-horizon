@@ -45,6 +45,8 @@
                 comment="Magento status (1=enabled, 2=disabled)"/>
         <column xsi:type="decimal" name="rating_avg" precision="3" scale="2" nullable="true"
                 comment="Average approved review rating on a 1-5 scale (NULL when unrated)"/>
+        <column xsi:type="decimal" name="sold_qty" precision="12" scale="4" unsigned="true" nullable="false" default="0"
+                comment="Units sold in the last 365 days (non-cancelled orders)"/>
         <column xsi:type="int" name="review_count" unsigned="true" nullable="false" default="0"
                 comment="Number of approved reviews"/>
         <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false"

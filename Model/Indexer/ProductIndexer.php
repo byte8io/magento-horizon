@@ -7,6 +7,7 @@ namespace Byte8\Horizon\Model\Indexer;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product\Visibility;
 use Byte8\Horizon\Model\Review\SummaryProvider;
+use Byte8\Horizon\Model\Sales\SoldSummaryProvider;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Framework\App\ResourceConnection;
@@ -24,7 +25,8 @@ class ProductIndexer
         private readonly StoreManagerInterface $storeManager,
         private readonly ResourceConnection $resourceConnection,
         private readonly LoggerInterface $logger,
-        private readonly SummaryProvider $reviewSummary
+        private readonly SummaryProvider $reviewSummary,
+        private readonly SoldSummaryProvider $soldSummary
     ) {
     }
 
@@ -50,11 +52,17 @@ class ProductIndexer
 
         $currency = $this->storeManager->getStore()->getBaseCurrencyCode();
         $ratings = $this->reviewSummary->forAllProducts();
+        $sold = $this->soldSummary->forAllProducts();
         $count = 0;
         $batch = [];
 
         foreach ($collection as $product) {
-            $batch[] = $this->buildRow($product, $currency, $ratings[(int) $product->getId()] ?? null);
+            $batch[] = $this->buildRow(
+                $product,
+                $currency,
+                $ratings[(int) $product->getId()] ?? null,
+                $sold[(int) $product->getId()] ?? 0.0
+            );
             $count++;
 
             if (count($batch) >= self::BATCH_SIZE) {
@@ -135,10 +143,16 @@ class ProductIndexer
 
         $currency = $this->storeManager->getStore()->getBaseCurrencyCode();
         $ratings = $this->reviewSummary->forProductIds($productIds);
+        $sold = $this->soldSummary->forProductIds($productIds);
         $rows = [];
 
         foreach ($collection as $product) {
-            $rows[] = $this->buildRow($product, $currency, $ratings[(int) $product->getId()] ?? null);
+            $rows[] = $this->buildRow(
+                $product,
+                $currency,
+                $ratings[(int) $product->getId()] ?? null,
+                $sold[(int) $product->getId()] ?? 0.0
+            );
         }
 
         if (!empty($rows)) {
@@ -148,9 +162,14 @@ class ProductIndexer
 
     /**
      * @param array{avg: float|null, count: int}|null $rating Approved-review summary for this product
+     * @param float $soldQty Units sold in the last SoldSummaryProvider::WINDOW_DAYS days
      */
-    private function buildRow(\Magento\Catalog\Model\Product $product, string $currency, ?array $rating): array
-    {
+    private function buildRow(
+        \Magento\Catalog\Model\Product $product,
+        string $currency,
+        ?array $rating,
+        float $soldQty = 0.0
+    ): array {
         // Stock info
         $isInStock = false;
         $qty = 0.0;
@@ -202,6 +221,7 @@ class ProductIndexer
             'status' => (int) $product->getStatus(),
             'rating_avg' => $rating['avg'] ?? null,
             'review_count' => $rating['count'] ?? 0,
+            'sold_qty' => $soldQty,
         ];
     }
 }
