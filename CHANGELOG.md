@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.3.0](https://github.com/byte8io/magento-horizon/compare/v1.2.1...v1.3.0) (2026-10-20)
+
+
+### Features
+
+* absolute storefront url on product search and detail responses ([4234b15](https://github.com/byte8io/magento-horizon/commit/4234b150198015c66d8202fe190d168b99469c0b))
+* delivery estimates — shipments, tracking and arrival dates on orders ([6436a1a](https://github.com/byte8io/magento-horizon/commit/6436a1a31612ff36faaa846c237b69c6bd97cd4f))
+* expose tax settings in store-info ([2be0680](https://github.com/byte8io/magento-horizon/commit/2be06806ac588147e8476a4513c4150f44d22fe5))
+* invoices, credit memos and cancellation facts on order detail ([0725a1f](https://github.com/byte8io/magento-horizon/commit/0725a1f5791c384e10a01d050a4c01e3791e5cb1))
+* payment summary on order detail ([4b24ec1](https://github.com/byte8io/magento-horizon/commit/4b24ec16971ee5bd983e1194d64b65c02362fafb))
+* product reviews for AI agents and the assistant ([c77d1c1](https://github.com/byte8io/magento-horizon/commit/c77d1c118669083795f946179ac37ee079611d8b))
+* register the flat AI index as a native Magento indexer ([a940a01](https://github.com/byte8io/magento-horizon/commit/a940a01344d02826c00e3645fa5859e3a7470c68))
+* shipping estimate + store-info endpoints for the AI assistant ([500c811](https://github.com/byte8io/magento-horizon/commit/500c81133e14fbb97cdabaf9c5f339a2a89c7bf6))
+* shipping estimate reports why free shipping applies ([368d64d](https://github.com/byte8io/magento-horizon/commit/368d64d4556c3b115880241a70e1c5ff075878a2))
+* shopper-friendly search and composite product prices ([5815cd7](https://github.com/byte8io/magento-horizon/commit/5815cd7ff8525fbb4d53391e5e04863f23a3aab8))
+* sold_qty on the product index and ranked search ([584ca21](https://github.com/byte8io/magento-horizon/commit/584ca2182ee3a028016af515e5e4b052697de98e))
+
 ## [1.2.1](https://github.com/byte8io/magento-horizon/compare/v1.2.0...v1.2.1) (2026-09-26)
 
 
