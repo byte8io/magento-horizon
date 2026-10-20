@@ -21,13 +21,16 @@
             "rating_avg": true,
             "review_count": true,
             "updated_at": true,
-            "sold_qty": true
+            "sold_qty": true,
+            "search_text": true,
+            "options_json": true
         },
         "index": {
             "BYTE8_HORIZON_PRODUCT_INDEX_NAME_SKU_SHORT_DESCRIPTION": true,
             "BYTE8_HORIZON_PRODUCT_INDEX_PRODUCT_TYPE": true,
             "BYTE8_HORIZON_PRODUCT_INDEX_IS_IN_STOCK": true,
-            "BYTE8_HORIZON_PRODUCT_INDEX_STATUS_VISIBILITY": true
+            "BYTE8_HORIZON_PRODUCT_INDEX_STATUS_VISIBILITY": true,
+            "BYTE8_HORIZON_PRD_IDX_NAME_SKU_SHORT_DESCRIPTION_SRCH_TEXT": true
         },
         "constraint": {
             "PRIMARY": true,

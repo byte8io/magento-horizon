@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Byte8\Horizon\Model\Service;
 
 use Byte8\Horizon\Model\ResourceModel\ProductIndex\CollectionFactory;
+use Byte8\Horizon\Model\Catalog\CompositeResolver;
 use Byte8\Horizon\Model\Review\SummaryProvider;
 use Byte8\Horizon\Model\Sales\SoldSummaryProvider;
 use Magento\Catalog\Api\ProductRepositoryInterface;
@@ -27,6 +28,7 @@ class ProductService
         private readonly ResourceConnection $resourceConnection,
         private readonly SummaryProvider $reviewSummary,
         private readonly SoldSummaryProvider $soldSummary,
+        private readonly CompositeResolver $compositeResolver,
         private readonly ScopeConfigInterface $scopeConfig
     ) {
     }
@@ -50,15 +52,17 @@ class ProductService
         $collection->addFieldToFilter('status', 1);
         $collection->addFieldToFilter('visibility', ['in' => [2, 3, 4]]);
 
-        // Full-text search on name, sku, short_description
-        if ($query !== '' && $query !== '*') {
-            $connection = $this->resourceConnection->getConnection();
-            $table = $this->resourceConnection->getTableName('byte8_horizon_product_index');
-            $matchExpr = $connection->quoteInto(
-                'MATCH(name, sku, short_description) AGAINST(? IN BOOLEAN MODE)',
-                $this->prepareSearchQuery($query)
-            );
-            $collection->getSelect()->where($matchExpr);
+        // Full-text search on name, sku, short_description and the derived
+        // search_text (category names, variant options, attribute values).
+        // Every term is required first; if that finds nothing, retry with the
+        // terms optional so "blue cotton tee" still surfaces tees.
+        $terms = $this->searchTerms($query);
+        if ($terms !== []) {
+            $matched = $this->applyMatch(clone $collection, $terms, true);
+            if ($matched->getSize() === 0 && count($terms) > 1) {
+                $matched = $this->applyMatch(clone $collection, $terms, false);
+            }
+            $collection = $matched;
         }
 
         if ($categoryId !== null) {
@@ -101,6 +105,7 @@ class ProductService
                 'rating_avg' => $item->getData('rating_avg') !== null ? (float) $item->getData('rating_avg') : null,
                 'review_count' => (int) ($item->getData('review_count') ?? 0),
                 'sold_qty' => (float) ($item->getData('sold_qty') ?? 0),
+                'options' => $this->decodeOptions($item->getData('options_json')),
             ];
         }
 
@@ -185,6 +190,7 @@ class ProductService
 
         // Reviews (approved only, live — not from the index)
         $rating = $this->reviewSummary->forProductIds([(int) $product->getId()])[(int) $product->getId()] ?? null;
+        $composite = $this->compositeResolver->resolve($product);
         $soldQty = $this->soldSummary->forProductIds([(int) $product->getId()])[(int) $product->getId()] ?? 0.0;
 
         // Stock
@@ -212,6 +218,7 @@ class ProductService
             'rating_avg' => $rating['avg'] ?? null,
             'review_count' => $rating['count'] ?? 0,
             'sold_qty' => $soldQty,
+            'options' => $composite['options'],
         ];
     }
 
@@ -267,16 +274,126 @@ class ProductService
     /**
      * Prepare query for MySQL MATCH AGAINST in boolean mode.
      */
-    private function prepareSearchQuery(string $query): string
+    /**
+     * Retail vocabulary that rarely matches catalogue wording verbatim. Each
+     * query word is expanded to itself OR its synonyms; merchant-managed
+     * Magento search synonym groups are merged in when present.
+     */
+    private const SYNONYMS = [
+        'tshirt' => ['tee'],
+        'tshirts' => ['tee'],
+        'tees' => ['tee'],
+        'trousers' => ['pants'],
+        'jumper' => ['sweater', 'hoodie'],
+        'pullover' => ['sweater'],
+        'hoody' => ['hoodie'],
+        'trainers' => ['sneakers', 'shoes'],
+        'rucksack' => ['backpack'],
+        'mens' => ['men'],
+        'womens' => ['women'],
+        'ladies' => ['women'],
+        'gents' => ['men'],
+    ];
+
+    /** InnoDB default innodb_ft_min_token_size; shorter tokens never match. */
+    private const MIN_TOKEN = 3;
+
+    /**
+     * @return string[][] one entry per query word: [word, synonym, ...] (prefix-matched)
+     */
+    private function searchTerms(string $query): array
     {
-        $words = preg_split('/\s+/', trim($query));
-        $terms = [];
-        foreach ($words as $word) {
-            $word = preg_replace('/[^\w\-]/', '', $word);
-            if (strlen($word) >= 2) {
-                $terms[] = '+' . $word . '*';
-            }
+        $query = mb_strtolower(trim($query));
+        if ($query === '' || $query === '*') {
+            return [];
         }
-        return implode(' ', $terms);
+        // "t-shirt" / "t shirt" would otherwise split into a 1-char token and "shirt".
+        $query = preg_replace('/\bt[\s\-]?shirts?\b/u', 'tee', $query) ?? $query;
+        $query = str_replace(['-', '/', '_'], ' ', $query);
+
+        $magentoGroups = $this->magentoSynonymGroups();
+        $terms = [];
+        foreach (preg_split('/\s+/', $query) ?: [] as $word) {
+            $word = preg_replace('/[^\p{L}\p{N}]/u', '', $word) ?? '';
+            if (mb_strlen($word) < self::MIN_TOKEN) {
+                continue;
+            }
+            $variants = [$word];
+            foreach (self::SYNONYMS[$word] ?? [] as $synonym) {
+                $variants[] = $synonym;
+            }
+            foreach ($magentoGroups as $group) {
+                if (in_array($word, $group, true)) {
+                    $variants = array_merge($variants, $group);
+                }
+            }
+            $terms[] = array_values(array_unique(array_filter(
+                $variants,
+                static fn (string $v): bool => mb_strlen($v) >= self::MIN_TOKEN
+            )));
+        }
+        return $terms;
+    }
+
+    /**
+     * @param string[][] $terms
+     */
+    private function applyMatch(
+        \Byte8\Horizon\Model\ResourceModel\ProductIndex\Collection $collection,
+        array $terms,
+        bool $requireAll
+    ): \Byte8\Horizon\Model\ResourceModel\ProductIndex\Collection {
+        $parts = [];
+        foreach ($terms as $variants) {
+            $group = implode(' ', array_map(static fn (string $v): string => $v . '*', $variants));
+            $parts[] = ($requireAll ? '+' : '') . (count($variants) > 1 ? '(' . $group . ')' : $group);
+        }
+        $connection = $this->resourceConnection->getConnection();
+        $against = $connection->quote(implode(' ', $parts));
+        $match = 'MATCH(name, sku, short_description, search_text) AGAINST(' . $against . ' IN BOOLEAN MODE)';
+        $collection->getSelect()->where($match);
+        $collection->getSelect()->order(new \Zend_Db_Expr($match . ' DESC'));
+        return $collection;
+    }
+
+    /**
+     * Magento admin → Marketing → Search Synonyms, as groups of lower-cased words.
+     *
+     * @return string[][]
+     */
+    private function magentoSynonymGroups(): array
+    {
+        try {
+            $connection = $this->resourceConnection->getConnection();
+            $table = $this->resourceConnection->getTableName('search_synonyms');
+            if (!$connection->isTableExists($table)) {
+                return [];
+            }
+            $groups = [];
+            foreach ($connection->fetchCol($connection->select()->from($table, ['synonyms'])) as $row) {
+                $words = array_values(array_filter(array_map(
+                    static fn (string $w): string => mb_strtolower(trim($w)),
+                    explode(',', (string) $row)
+                )));
+                if (count($words) > 1) {
+                    $groups[] = $words;
+                }
+            }
+            return $groups;
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * @return array<int, array{code: string, label: string, values: string[]}>
+     */
+    private function decodeOptions(?string $json): array
+    {
+        if ($json === null || $json === '') {
+            return [];
+        }
+        $decoded = json_decode($json, true);
+        return is_array($decoded) ? $decoded : [];
     }
 }
