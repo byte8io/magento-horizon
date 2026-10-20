@@ -11,18 +11,23 @@ use Magento\Cms\Model\Template\FilterProvider;
 use Magento\Directory\Model\AllowedCountries;
 use Magento\Directory\Model\Config\Source\Country as CountrySource;
 use Magento\Directory\Model\RegionFactory;
+use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Payment\Api\PaymentMethodListInterface;
 use Magento\Shipping\Model\Config as ShippingConfig;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
+use Magento\Tax\Api\TaxClassRepositoryInterface;
+use Magento\Tax\Api\TaxRateRepositoryInterface;
+use Magento\Tax\Api\TaxRuleRepositoryInterface;
 use Psr\Log\LoggerInterface;
 
 /**
  * Store facts an assistant needs to answer non-catalog questions: contact
  * details, opening hours, where the store ships, which carriers and payment
- * methods are active, and the merchant's own policy pages (shipping, returns,
- * FAQ…) rendered to plain text.
+ * methods are active, how tax is priced and displayed (and which rates apply
+ * where), and the merchant's own policy pages (shipping, returns, FAQ…)
+ * rendered to plain text.
  *
  * Which CMS pages are exposed is a merchant decision (Stores → Configuration →
  * Byte8 → Horizon → AI Shopping Assistant → Knowledge pages). When nothing is
@@ -34,6 +39,7 @@ class StoreInfoService
     private const MAX_PAGE_CHARS = 6000;
     private const MAX_TOTAL_CHARS = 24000;
     private const MAX_LISTED_COUNTRIES = 40;
+    private const MAX_LISTED_RATES = 40;
 
     private const AUTO_DETECT_PATTERN =
         '/shipping|deliver|return|refund|faq|customer-service|customer service|contact|terms|payment|warranty|guarantee/i';
@@ -49,6 +55,10 @@ class StoreInfoService
         private readonly PaymentMethodListInterface $paymentMethodList,
         private readonly PageCollectionFactory $pageCollectionFactory,
         private readonly FilterProvider $filterProvider,
+        private readonly SearchCriteriaBuilder $searchCriteriaBuilder,
+        private readonly TaxRateRepositoryInterface $taxRateRepository,
+        private readonly TaxRuleRepositoryInterface $taxRuleRepository,
+        private readonly TaxClassRepositoryInterface $taxClassRepository,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -66,6 +76,7 @@ class StoreInfoService
             'ships_to' => $this->shipsTo($storeId),
             'shipping_methods' => $this->shippingMethods($storeId),
             'payment_methods' => $this->paymentMethods($storeId),
+            'tax' => $this->tax($storeId),
             'pages' => $this->pages($storeId, (string) $store->getBaseUrl()),
         ];
     }
@@ -224,6 +235,101 @@ class StoreInfoService
         $text = preg_replace('/\n{2,}/', "\n", $text) ?? $text;
 
         return trim($text);
+    }
+
+    /**
+     * How prices relate to tax, so an assistant can answer "do your prices
+     * include VAT?" without guessing. Rates are limited to those referenced by
+     * at least one tax rule — a rate nobody applies is noise.
+     */
+    private function tax(int $storeId): array
+    {
+        $flag = fn (string $path): bool => $this->scopeConfig->isSetFlag($path, ScopeInterface::SCOPE_STORE, $storeId);
+        $display = fn (string $path): string => match ((int) $this->scopeConfig->getValue(
+            $path,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        )) {
+            2 => 'including_tax',
+            3 => 'both',
+            default => 'excluding_tax',
+        };
+        $calculatedOn = match ($this->stringConfig('tax/calculation/based_on', $storeId)) {
+            'billing' => 'billing_address',
+            'origin' => 'store_origin',
+            default => 'shipping_address',
+        };
+
+        return [
+            'prices_include_tax' => $flag('tax/calculation/price_includes_tax'),
+            'shipping_includes_tax' => $flag('tax/calculation/shipping_includes_tax'),
+            'catalog_display' => $display('tax/display/type'),
+            'shipping_display' => $display('tax/display/shipping'),
+            'calculated_on' => $calculatedOn,
+            'default_country' => $this->stringConfig('tax/defaults/country', $storeId),
+            'rates' => $this->taxRates(),
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function taxRates(): array
+    {
+        try {
+            $classNames = [];
+            foreach ($this->taxClassRepository->getList($this->searchCriteriaBuilder->create())->getItems() as $class) {
+                $classNames[(int) $class->getClassId()] = (string) $class->getClassName();
+            }
+
+            /** @var array<int, string[]> $inUse rate id => product tax class names */
+            $inUse = [];
+            foreach ($this->taxRuleRepository->getList($this->searchCriteriaBuilder->create())->getItems() as $rule) {
+                $names = [];
+                foreach ($rule->getProductTaxClassIds() ?? [] as $classId) {
+                    $names[] = $classNames[(int) $classId] ?? (string) $classId;
+                }
+                foreach ($rule->getTaxRateIds() ?? [] as $rateId) {
+                    $inUse[(int) $rateId] = array_values(array_unique(array_merge($inUse[(int) $rateId] ?? [], $names)));
+                }
+            }
+            if ($inUse === []) {
+                return [];
+            }
+
+            $rates = [];
+            foreach ($this->taxRateRepository->getList($this->searchCriteriaBuilder->create())->getItems() as $rate) {
+                $rateId = (int) $rate->getId();
+                if (!isset($inUse[$rateId])) {
+                    continue;
+                }
+                $regionName = null;
+                $regionId = (int) $rate->getTaxRegionId();
+                if ($regionId > 0) {
+                    $region = $this->regionFactory->create()->load($regionId);
+                    $regionName = $region->getId() ? (string) $region->getName() : null;
+                }
+                $postcode = trim((string) $rate->getTaxPostcode());
+                $countryId = (string) $rate->getTaxCountryId();
+
+                $rates[] = [
+                    'code' => (string) $rate->getCode(),
+                    'country_id' => $countryId,
+                    'country' => $this->countryName($countryId),
+                    'region' => $regionName,
+                    'postcode' => ($postcode === '' || $postcode === '*') ? null : $postcode,
+                    'rate' => (float) $rate->getRate(),
+                    'product_classes' => $inUse[$rateId],
+                ];
+                if (count($rates) >= self::MAX_LISTED_RATES) {
+                    break;
+                }
+            }
+            return $rates;
+        } catch (\Throwable $e) {
+            $this->logger->warning('Horizon store-info: could not list tax rates: ' . $e->getMessage());
+            return [];
+        }
     }
 
     private function countryName(string $code): ?string
