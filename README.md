@@ -52,7 +52,7 @@ bin/magento indexer:reindex byte8_horizon_product
 | **Delivery Estimates → Transit Times** | Min/max days in transit per carrier, optionally per method code. Carriers without a row fall back to a time in their method title, e.g. "(3-5 days)". |
 | **AI Shopping Assistant → Knowledge Pages** | CMS pages the assistant may quote for delivery times, returns, refunds, payment and contact questions. Leave empty to auto-detect pages whose title or URL key mentions shipping, delivery, returns, FAQ, customer service, contact, terms or payment. |
 
-Then click **Test connection** in the Horizon dashboard — a green check means agents can reach your catalog. Full walkthrough: [docs.byte8.io/horizon/getting-started/quick-start](https://docs.byte8.io/horizon/getting-started/quick-start).
+Then click **Test connection** in the Horizon dashboard — a green check means agents can reach your catalog. Full walkthrough: [docs.byte8.io/horizon/docs/getting-started/quick-start](https://docs.byte8.io/horizon/docs/getting-started/quick-start).
 
 ## How it fits together
 
@@ -73,7 +73,7 @@ One API key secures both directions: agents present it to the gateway as a beare
 
 ## The AI Shopping Assistant
 
-With the assistant enabled, shoppers get an on-site chat that answers product, delivery ("do you ship to W1S and what does it cost?" — answered from your real carrier rates), policy (delivery times, returns, payment — answered from your own CMS pages) and order questions grounded in your live store — Byte8 hosts the AI, and the assistant is deliberately read-only (no cart or checkout actions). Order lookups require the shopper's order number *and* checkout email, verified server-side, and return a redacted summary only. Details: [docs.byte8.io/horizon/assistant](https://docs.byte8.io/horizon/assistant).
+With the assistant enabled, shoppers get an on-site chat that answers product, delivery ("do you ship to W1S and what does it cost?" — answered from your real carrier rates), policy (delivery times, returns, payment — answered from your own CMS pages) and order questions grounded in your live store — Byte8 hosts the AI, and the assistant is deliberately read-only (no cart or checkout actions). Order lookups require the shopper's order number *and* checkout email, verified server-side, and return a redacted summary only. Details: [docs.byte8.io/horizon/docs/assistant](https://docs.byte8.io/horizon/docs/assistant).
 
 ## Support
 
