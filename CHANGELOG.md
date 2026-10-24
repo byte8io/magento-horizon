@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.1](https://github.com/byte8io/magento-horizon/compare/v1.3.0...v1.3.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* report the installed package version from composer.json in /health ([4e3ec6f](https://github.com/byte8io/magento-horizon/commit/4e3ec6fed25ab14ed376b66b5aee30e35e126c46))
+
+
+### Documentation
+
+* fix documentation links to include the /docs/ route segment ([085c755](https://github.com/byte8io/magento-horizon/commit/085c755bc103e4871f27797e1c72b8e8b317c5cb))
+
 ## [1.3.0](https://github.com/byte8io/magento-horizon/compare/v1.2.1...v1.3.0) (2026-10-20)
 
 
