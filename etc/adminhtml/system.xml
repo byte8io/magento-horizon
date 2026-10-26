@@ -15,12 +15,12 @@
                 </field>
                 <field id="api_key" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>API Key</label>
-                    <comment><![CDATA[Auto-generated during installation. Copy this key into your Horizon dashboard. To regenerate, clear the field and save. Requests must include header: <code>X-Horizon-Key: your-api-key</code>]]></comment>
+                    <comment><![CDATA[Paste the key issued when you add this store at <a href="https://horizon.byte8.io" target="_blank">horizon.byte8.io</a> (shown once; rotate it from the dashboard if lost). Saving with the field empty generates a placeholder key, which the gateway will not accept until you replace it. Requests must include header: <code>X-Horizon-Key: your-api-key</code>]]></comment>
                     <backend_model>Byte8\Horizon\Model\Config\Backend\ApiKey</backend_model>
                 </field>
                 <field id="gateway_url" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Gateway URL</label>
-                    <comment><![CDATA[Base URL of the Byte8 Horizon gateway (e.g. <code>https://horizon.byte8.io</code> or <code>http://host.docker.internal:8085</code> for local dev). Used to push catalog invalidation webhooks. Leave empty to disable outbound webhooks.]]></comment>
+                    <comment><![CDATA[Base URL of the Byte8 Horizon gateway. Defaults to <code>https://horizon.byte8.io</code>; include the scheme. Used for catalog invalidation webhooks and the AI assistant bootstrap. Point it at a local gateway (e.g. <code>http://host.docker.internal:8085</code>) for development, or clear it to disable outbound webhooks.]]></comment>
                 </field>
             </group>
             <group id="assistant" translate="label" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">

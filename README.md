@@ -45,7 +45,7 @@ bin/magento indexer:reindex byte8_horizon_product
 |---|---|
 | **Enabled** | Master kill switch for the `/horizon/api/v1/*` API. |
 | **API key** | Paste the key issued when you add the store at [horizon.byte8.io](https://horizon.byte8.io) (shown once — rotate from the dashboard if lost). |
-| **Gateway URL** | `https://horizon.byte8.io` — enables invalidation webhooks and the assistant bootstrap. |
+| **Gateway URL** | Pre-filled with `https://horizon.byte8.io` — enables invalidation webhooks and the assistant bootstrap. Only change it for a self-hosted or local gateway. |
 | **AI Shopping Assistant → Enabled** | Injects the storefront chat widget. Enable the assistant for the store in your Horizon dashboard first. |
 | **Delivery Estimates → Handling Time (days)** | Days from order to dispatch (default 1). Used for orders not yet shipped and for quotes to new shoppers. |
 | **Delivery Estimates → Count Business Days Only** | Skip weekends when adding handling and transit days (default yes). |

@@ -6,7 +6,7 @@
             <general>
                 <enabled>1</enabled>
                 <api_key/>
-                <gateway_url/>
+                <gateway_url>https://horizon.byte8.io</gateway_url>
             </general>
             <assistant>
                 <enabled>0</enabled>
