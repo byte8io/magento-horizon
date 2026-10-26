@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.2](https://github.com/byte8io/magento-horizon/compare/v1.3.1...v1.3.2) (2026-10-26)
+
+
+### Bug Fixes
+
+* API key field is masked and never self-generated ([6fb738a](https://github.com/byte8io/magento-horizon/commit/6fb738ae3d534e402da067e840d725fa1020ec09))
+* default Gateway URL to https://horizon.byte8.io ([65aab74](https://github.com/byte8io/magento-horizon/commit/65aab7422c9b0b97fb1f4e8a878b2c6cdd4d3a25))
+* reindex no longer dies on catalogues without the sample-data attributes ([263453d](https://github.com/byte8io/magento-horizon/commit/263453dcd9dd742dbda57d5c836b896eae982ed9))
+
 ## [1.3.1](https://github.com/byte8io/magento-horizon/compare/v1.3.0...v1.3.1) (2026-10-24)
 
 
