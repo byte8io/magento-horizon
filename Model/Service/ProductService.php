@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Byte8\Horizon\Model\Service;
 
 use Byte8\Horizon\Model\ResourceModel\ProductIndex\CollectionFactory;
+use Byte8\Horizon\Model\Catalog\AttributeTextResolver;
 use Byte8\Horizon\Model\Catalog\CompositeResolver;
 use Byte8\Horizon\Model\Review\SummaryProvider;
 use Byte8\Horizon\Model\Sales\SoldSummaryProvider;
@@ -29,7 +30,8 @@ class ProductService
         private readonly SummaryProvider $reviewSummary,
         private readonly SoldSummaryProvider $soldSummary,
         private readonly CompositeResolver $compositeResolver,
-        private readonly ScopeConfigInterface $scopeConfig
+        private readonly ScopeConfigInterface $scopeConfig,
+        private readonly AttributeTextResolver $attributeTextResolver
     ) {
     }
 
@@ -174,19 +176,7 @@ class ProductService
         }
 
         // Attributes
-        $attributes = [];
-        $filterableAttrs = ['color', 'size', 'manufacturer', 'material', 'pattern'];
-        foreach ($filterableAttrs as $attrCode) {
-            $value = $product->getAttributeText($attrCode);
-            if ($value && $value !== false) {
-                $attr = $product->getResource()->getAttribute($attrCode);
-                $attributes[] = [
-                    'code' => $attrCode,
-                    'label' => $attr ? $attr->getStoreLabel() : $attrCode,
-                    'value' => is_array($value) ? implode(', ', $value) : (string) $value,
-                ];
-            }
-        }
+        $attributes = $this->attributeTextResolver->resolve($product);
 
         // Reviews (approved only, live — not from the index)
         $rating = $this->reviewSummary->forProductIds([(int) $product->getId()])[(int) $product->getId()] ?? null;

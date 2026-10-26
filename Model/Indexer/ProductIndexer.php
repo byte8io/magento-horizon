@@ -6,6 +6,7 @@ namespace Byte8\Horizon\Model\Indexer;
 
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product\Visibility;
+use Byte8\Horizon\Model\Catalog\AttributeTextResolver;
 use Byte8\Horizon\Model\Catalog\CompositeResolver;
 use Byte8\Horizon\Model\Review\SummaryProvider;
 use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCollectionFactory;
@@ -30,7 +31,8 @@ class ProductIndexer
         private readonly SummaryProvider $reviewSummary,
         private readonly SoldSummaryProvider $soldSummary,
         private readonly CompositeResolver $compositeResolver,
-        private readonly CategoryCollectionFactory $categoryCollectionFactory
+        private readonly CategoryCollectionFactory $categoryCollectionFactory,
+        private readonly AttributeTextResolver $attributeTextResolver
     ) {
     }
 
@@ -48,10 +50,10 @@ class ProductIndexer
         $connection->truncateTable($table);
 
         $collection = $this->productCollectionFactory->create();
-        $collection->addAttributeToSelect([
+        $collection->addAttributeToSelect(array_merge([
             'name', 'sku', 'short_description', 'description', 'price', 'special_price',
             'url_key', 'image', 'visibility', 'status', 'type_id',
-        ]);
+        ], $this->attributeTextResolver->selectableCodes()));
         $collection->addAttributeToFilter('status', \Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED);
 
         $currency = $this->storeManager->getStore()->getBaseCurrencyCode();
@@ -140,10 +142,10 @@ class ProductIndexer
         $connection->delete($table, ['product_id IN (?)' => $productIds]);
 
         $collection = $this->productCollectionFactory->create();
-        $collection->addAttributeToSelect([
+        $collection->addAttributeToSelect(array_merge([
             'name', 'sku', 'short_description', 'description', 'price', 'special_price',
             'url_key', 'image', 'visibility', 'status', 'type_id',
-        ]);
+        ], $this->attributeTextResolver->selectableCodes()));
         $collection->addIdFilter($productIds);
         $collection->addAttributeToFilter('status', \Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED);
 
@@ -194,20 +196,8 @@ class ProductIndexer
         // Categories
         $categoryIds = $product->getCategoryIds();
 
-        // Filterable attributes (color, size, manufacturer, etc.)
-        $attributes = [];
-        $filterableAttrs = ['color', 'size', 'manufacturer', 'material', 'pattern'];
-        foreach ($filterableAttrs as $attrCode) {
-            $value = $product->getAttributeText($attrCode);
-            if ($value && $value !== false) {
-                $attr = $product->getResource()->getAttribute($attrCode);
-                $attributes[] = [
-                    'code' => $attrCode,
-                    'label' => $attr ? $attr->getStoreLabel() : $attrCode,
-                    'value' => is_array($value) ? implode(', ', $value) : (string) $value,
-                ];
-            }
-        }
+        // Filterable attributes (colour, size, brand…) — only those this catalogue has
+        $attributes = $this->attributeTextResolver->resolve($product);
 
         $composite = $this->compositeResolver->resolve($product);
 
