@@ -9,6 +9,17 @@
         </arguments>
     </type>
 
+    <!-- Editorial content an agent may search and read. Add a provider per
+         content module; an unavailable one (module missing/disabled) is skipped. -->
+    <type name="Byte8\Horizon\Model\Content\ProviderPool">
+        <arguments>
+            <argument name="providers" xsi:type="array">
+                <item name="page" xsi:type="object">Byte8\Horizon\Model\Content\CmsPageProvider</item>
+                <item name="post" xsi:type="object">Byte8\Horizon\Model\Content\MagefanBlogProvider</item>
+            </argument>
+        </arguments>
+    </type>
+
     <!-- CLI commands -->
     <type name="Magento\Framework\Console\CommandListInterface">
         <arguments>

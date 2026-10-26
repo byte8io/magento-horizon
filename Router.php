@@ -23,6 +23,7 @@ class Router implements RouterInterface
         'horizon/api/v1/reviews'     => Controller\Api\Reviews::class,
         'horizon/api/v1/shipping/estimate' => Controller\Api\ShippingEstimate::class,
         'horizon/api/v1/store-info'  => Controller\Api\StoreInfo::class,
+        'horizon/api/v1/content/search' => Controller\Api\ContentSearch::class,
     ];
 
     public function __construct(
@@ -57,6 +58,15 @@ class Router implements RouterInterface
             $request->setActionName('OrderDetail');
             $request->setParam('identifier', $matches[1]);
             return $this->actionFactory->create(Controller\Api\OrderDetail::class);
+        }
+
+        if (preg_match('#^horizon/api/v1/content/([a-z]+)/(.+)$#', $path, $matches)) {
+            $request->setModuleName('horizon');
+            $request->setControllerName('api');
+            $request->setActionName('ContentDetail');
+            $request->setParam('type', $matches[1]);
+            $request->setParam('identifier', rtrim($matches[2], '/'));
+            return $this->actionFactory->create(Controller\Api\ContentDetail::class);
         }
 
         return null;
