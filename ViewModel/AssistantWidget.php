@@ -6,6 +6,7 @@ namespace Byte8\Horizon\ViewModel;
 
 use Byte8\Horizon\Model\Config;
 use Byte8\Horizon\Model\Service\AssistantBootstrap;
+use Magento\Framework\Locale\ResolverInterface as LocaleResolver;
 use Magento\Framework\View\Element\Block\ArgumentInterface;
 
 /**
@@ -25,7 +26,8 @@ class AssistantWidget implements ArgumentInterface
 
     public function __construct(
         private readonly Config $config,
-        private readonly AssistantBootstrap $assistantBootstrap
+        private readonly AssistantBootstrap $assistantBootstrap,
+        private readonly LocaleResolver $localeResolver
     ) {
     }
 
@@ -55,6 +57,16 @@ class AssistantWidget implements ArgumentInterface
         $value = $this->getBootstrap()['assistant_name'] ?? null;
 
         return is_string($value) && $value !== '' ? $value : self::DEFAULT_ASSISTANT_NAME;
+    }
+
+    /**
+     * Store view locale as a BCP 47 tag (de_DE → de-DE). The widget picks its
+     * own copy (greeting, placeholder, buttons, notices) from this; the
+     * assistant's replies follow the shopper's language regardless.
+     */
+    public function getLanguage(): string
+    {
+        return str_replace('_', '-', $this->localeResolver->getLocale());
     }
 
     public function getAccentColor(): string

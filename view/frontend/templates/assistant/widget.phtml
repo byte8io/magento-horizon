@@ -15,5 +15,5 @@ declare(strict_types=1);
 $viewModel = $block->getData('view_model');
 ?>
 <?php if ($viewModel->isActive()): ?>
-<script src="<?= $escaper->escapeUrl($viewModel->getScriptUrl()) ?>" data-key="<?= $escaper->escapeHtmlAttr($viewModel->getPublishableKey()) ?>" data-name="<?= $escaper->escapeHtmlAttr($viewModel->getAssistantName()) ?>" data-accent="<?= $escaper->escapeHtmlAttr($viewModel->getAccentColor()) ?>" defer></script>
+<script src="<?= $escaper->escapeUrl($viewModel->getScriptUrl()) ?>" data-key="<?= $escaper->escapeHtmlAttr($viewModel->getPublishableKey()) ?>" data-name="<?= $escaper->escapeHtmlAttr($viewModel->getAssistantName()) ?>" data-accent="<?= $escaper->escapeHtmlAttr($viewModel->getAccentColor()) ?>" data-lang="<?= $escaper->escapeHtmlAttr($viewModel->getLanguage()) ?>" defer></script>
 <?php endif; ?>
