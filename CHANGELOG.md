@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0](https://github.com/byte8io/magento-horizon/compare/v1.3.2...v1.4.0) (2026-10-27)
+
+
+### Features
+
+* content search API — CMS pages and Magefan Blog posts for AI agents ([f7b4bef](https://github.com/byte8io/magento-horizon/commit/f7b4befe5901a972a5101a464ee69eb48163812a))
+* pass the store view locale to the assistant widget ([53c3aef](https://github.com/byte8io/magento-horizon/commit/53c3aefa9d7b9c8ab11a2b4fd9762493811bf7c5))
+
 ## [1.3.2](https://github.com/byte8io/magento-horizon/compare/v1.3.1...v1.3.2) (2026-10-26)
 
 
