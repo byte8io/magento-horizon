@@ -24,6 +24,7 @@ class Router implements RouterInterface
         'horizon/api/v1/shipping/estimate' => Controller\Api\ShippingEstimate::class,
         'horizon/api/v1/store-info'  => Controller\Api\StoreInfo::class,
         'horizon/api/v1/content/search' => Controller\Api\ContentSearch::class,
+        'horizon/api/v1/ai-visibility' => Controller\Api\AiVisibility::class,
     ];
 
     public function __construct(

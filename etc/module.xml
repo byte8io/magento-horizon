@@ -4,6 +4,7 @@
     <module name="Byte8_Horizon">
         <sequence>
             <module name="Byte8_Core"/>
+            <module name="Byte8_AiVisibility"/>
             <module name="Magento_Catalog"/>
             <module name="Magento_Store"/>
             <module name="Magento_Sales"/>
