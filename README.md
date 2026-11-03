@@ -51,6 +51,8 @@ bin/magento indexer:reindex byte8_horizon_product
 | **Delivery Estimates → Handling Time (days)** | Days from order to dispatch (default 1). Used for orders not yet shipped and for quotes to new shoppers. |
 | **Delivery Estimates → Count Business Days Only** | Skip weekends when adding handling and transit days (default yes). |
 | **Delivery Estimates → Transit Times** | Min/max days in transit per carrier, optionally per method code. Carriers without a row fall back to a time in their method title, e.g. "(3-5 days)". |
+| **General → Write Key** | Optional. Agent write key issued by the Horizon dashboard; the only key accepted by `/horizon/api/v1/admin/*` (currently `POST admin/cms-page`). The API Key stays read-only. |
+| **General → Write Scopes** | What the write key may change: `cms:write`, `catalog:write`, `sales:write`. Enforced on every write; every write supports `dry_run`. |
 | **AI Shopping Assistant → Knowledge Pages** | CMS pages the assistant may quote for delivery times, returns, refunds, payment and contact questions. Leave empty to auto-detect pages whose title or URL key mentions shipping, delivery, returns, FAQ, customer service, contact, terms or payment, in English, German, French, Spanish, Italian or Dutch. |
 
 Then click **Test connection** in the Horizon dashboard — a green check means agents can reach your catalog. Full walkthrough: [docs.byte8.io/horizon/docs/getting-started/quick-start](https://docs.byte8.io/horizon/docs/getting-started/quick-start).

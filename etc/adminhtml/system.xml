@@ -22,6 +22,17 @@
                     <label>Gateway URL</label>
                     <comment><![CDATA[Base URL of the Byte8 Horizon gateway. Defaults to <code>https://horizon.byte8.io</code>; include the scheme. Used for catalog invalidation webhooks and the AI assistant bootstrap. Point it at a local gateway (e.g. <code>http://host.docker.internal:8085</code>) for development, or clear it to disable outbound webhooks.]]></comment>
                 </field>
+                <field id="write_api_key" translate="label comment" type="obscure" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Write Key</label>
+                    <comment><![CDATA[Optional. Issued under <strong>Agent write access</strong> on the store's page in the Horizon dashboard (shown once). Only this key can call the <code>/horizon/api/v1/admin/*</code> endpoints that change the store; the API Key above stays read-only even if it leaks. Leave empty to keep the store read-only.]]></comment>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                </field>
+                <field id="write_scopes" translate="label comment" type="multiselect" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                    <label>Write Scopes</label>
+                    <source_model>Byte8\Horizon\Model\Config\Source\WriteScope</source_model>
+                    <can_be_empty>1</can_be_empty>
+                    <comment><![CDATA[What the write key may change. Enforced here, in the extension, on every write; the dashboard's own scope list only decides which tools agents see. Every write supports a dry run and is recorded in the dashboard's Changes list.]]></comment>
+                </field>
             </group>
             <group id="assistant" translate="label" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
                 <label>AI Shopping Assistant</label>

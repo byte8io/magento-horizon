@@ -53,6 +53,12 @@ class Health extends AbstractAction
             'magento_version' => $this->productMetadata->getVersion(),
             'robots' => $this->getRobotsInfo(),
             'modules' => $this->getModulesInfo(),
+            // Phase 8.1: lets the dashboard show whether the write key is in
+            // place and which scopes the merchant granted in Magento.
+            'write' => [
+                'configured' => $this->config->getWriteApiKey() !== null,
+                'scopes' => $this->config->getWriteScopes(),
+            ],
         ]);
     }
 

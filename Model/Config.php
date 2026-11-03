@@ -12,6 +12,8 @@ class Config
 {
     private const XML_PATH_ENABLED = 'byte8_horizon/general/enabled';
     private const XML_PATH_API_KEY = 'byte8_horizon/general/api_key';
+    private const XML_PATH_WRITE_API_KEY = 'byte8_horizon/general/write_api_key';
+    private const XML_PATH_WRITE_SCOPES = 'byte8_horizon/general/write_scopes';
     private const XML_PATH_GATEWAY_URL = 'byte8_horizon/general/gateway_url';
     private const XML_PATH_ASSISTANT_ENABLED = 'byte8_horizon/assistant/enabled';
     private const XML_PATH_KNOWLEDGE_PAGES = 'byte8_horizon/assistant/knowledge_pages';
@@ -96,6 +98,32 @@ class Config
             return $this->encryptor->decrypt($value);
         }
         return null;
+    }
+
+    /**
+     * The write key issued by the Horizon dashboard; null when the store is
+     * read-only. Never used for catalog reads by the gateway.
+     */
+    public function getWriteApiKey(): ?string
+    {
+        $value = $this->scopeConfig->getValue(self::XML_PATH_WRITE_API_KEY);
+        if ($value) {
+            $decrypted = trim((string) $this->encryptor->decrypt($value));
+            return $decrypted !== '' ? $decrypted : null;
+        }
+        return null;
+    }
+
+    /**
+     * @return string[] Granted scopes, e.g. ['cms:write'].
+     */
+    public function getWriteScopes(): array
+    {
+        $value = (string) $this->scopeConfig->getValue(self::XML_PATH_WRITE_SCOPES);
+        if ($value === '') {
+            return [];
+        }
+        return array_values(array_filter(array_map('trim', explode(',', $value))));
     }
 
     public function getGatewayUrl(): ?string

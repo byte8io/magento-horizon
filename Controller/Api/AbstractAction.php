@@ -40,8 +40,16 @@ abstract class AbstractAction implements HttpGetActionInterface, CsrfAwareAction
             ]);
         }
 
-        $requestApiKey = $this->getApiKeyFromRequest();
-        if ($requestApiKey === null || !hash_equals($configApiKey, $requestApiKey)) {
+        // Reads accept either key: an agent holding the write key must still
+        // be able to look things up. Writes (Admin\AbstractWriteAction) accept
+        // only the write key.
+        $requestApiKey = $this->getRequestApiKey();
+        $writeApiKey = $this->config->getWriteApiKey();
+        $accepted = $requestApiKey !== null && (
+            hash_equals($configApiKey, $requestApiKey)
+            || ($writeApiKey !== null && hash_equals($writeApiKey, $requestApiKey))
+        );
+        if (!$accepted) {
             return $result->setHttpResponseCode(401)->setData([
                 'error' => 'Invalid or missing API key',
                 'code' => 'UNAUTHORIZED',
@@ -70,7 +78,7 @@ abstract class AbstractAction implements HttpGetActionInterface, CsrfAwareAction
         return true;
     }
 
-    private function getApiKeyFromRequest(): ?string
+    protected function getRequestApiKey(): ?string
     {
         $horizonKey = $this->request->getHeader('X-Horizon-Key');
         if (!empty($horizonKey)) {
