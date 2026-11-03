@@ -32,9 +32,6 @@ use Magento\Store\Model\StoreManagerInterface;
  */
 class ShippingEstimateService
 {
-    private const XML_PATH_FREESHIPPING_ACTIVE = 'carriers/freeshipping/active';
-    private const XML_PATH_FREESHIPPING_SUBTOTAL = 'carriers/freeshipping/free_shipping_subtotal';
-
     private const NON_SHIPPABLE_TYPES = ['virtual', 'downloadable', 'giftcard'];
     private const OPTION_TYPES = ['bundle', 'grouped'];
 
@@ -48,7 +45,8 @@ class ShippingEstimateService
         private readonly ScopeConfigInterface $scopeConfig,
         private readonly PriceCurrencyInterface $priceCurrency,
         private readonly DeliveryWindowResolver $deliveryWindows,
-        private readonly RuleRepositoryInterface $ruleRepository
+        private readonly RuleRepositoryInterface $ruleRepository,
+        private readonly FreeShippingThresholdResolver $freeShippingThreshold
     ) {
     }
 
@@ -91,7 +89,7 @@ class ShippingEstimateService
             'subtotal' => null,
             'methods' => [],
             'unavailable' => [],
-            'free_shipping_from' => $this->freeShippingThreshold($storeId),
+            'free_shipping_from' => $this->freeShippingThreshold->resolve($storeId, $countryId)['amount'] ?? null,
             'free_shipping_reason' => null,
             'today' => $this->deliveryWindows->today(),
             'handling_days' => $this->deliveryWindows->handlingDays(),
@@ -279,12 +277,14 @@ class ShippingEstimateService
     }
 
     /**
-     * Explains why Magento offered the free shipping method, so an AI caller
-     * does not read "free from 120" next to a free quote on a 59 basket as a
-     * misconfiguration. Magento grants it either because the basket reached
-     * the carrier threshold or because a cart price rule (e.g. "Spend $50 or
-     * more - shipping is free!") flagged the items; rule ids are left on the
-     * address by the discount collector.
+     * Explains why a delivery method came back free, so an AI caller does not
+     * read "free from 120" next to a free quote on a 59 basket as a
+     * misconfiguration, and does not turn one free quote into "delivery is
+     * always free". Magento grants it either because the basket reached the
+     * carrier threshold (Free Shipping method, a carrier's own minimum, or a
+     * zero-priced table-rate row) or because a cart price rule (e.g. "Spend
+     * $50 or more - shipping is free!") flagged the items; rule ids are left
+     * on the address by the discount collector.
      *
      * @param array<int, array<string, mixed>> $methods
      * @return array{source: string, rule: string|null}|null
@@ -297,7 +297,7 @@ class ShippingEstimateService
     ): ?array {
         $offered = false;
         foreach ($methods as $method) {
-            if ($method['carrier_code'] === 'freeshipping') {
+            if ($method['carrier_code'] === 'freeshipping' || (float) $method['price'] <= 0.0) {
                 $offered = true;
                 break;
             }
@@ -325,15 +325,6 @@ class ShippingEstimateService
         }
 
         return ['source' => 'other', 'rule' => null];
-    }
-
-    private function freeShippingThreshold(int $storeId): ?float
-    {
-        if (!$this->scopeConfig->isSetFlag(self::XML_PATH_FREESHIPPING_ACTIVE, ScopeInterface::SCOPE_STORE, $storeId)) {
-            return null;
-        }
-        $value = $this->scopeConfig->getValue(self::XML_PATH_FREESHIPPING_SUBTOTAL, ScopeInterface::SCOPE_STORE, $storeId);
-        return $value !== null && $value !== '' ? (float) $value : null;
     }
 
     private function fail(array $result, string $reason, string $message): array

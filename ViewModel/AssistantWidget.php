@@ -76,6 +76,17 @@ class AssistantWidget implements ArgumentInterface
         return is_string($value) && $value !== '' ? $value : self::DEFAULT_ACCENT_COLOR;
     }
 
+    /**
+     * Merchant-written first message, set in the Horizon dashboard. Empty
+     * means the widget uses its built-in greeting in the store view language.
+     */
+    public function getWelcomeMessage(): string
+    {
+        $value = $this->getBootstrap()['welcome_message'] ?? null;
+
+        return is_string($value) ? trim($value) : '';
+    }
+
     private function getBootstrap(): ?array
     {
         if (!$this->bootstrapLoaded) {

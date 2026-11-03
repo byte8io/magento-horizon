@@ -41,8 +41,26 @@ class StoreInfoService
     private const MAX_LISTED_COUNTRIES = 40;
     private const MAX_LISTED_RATES = 40;
 
-    private const AUTO_DETECT_PATTERN =
-        '/shipping|deliver|return|refund|faq|customer-service|customer service|contact|terms|payment|warranty|guarantee/i';
+    /**
+     * Words a policy page's URL key or title tends to contain, in the
+     * languages Magento storefronts commonly run in (en, de, fr, es, it, nl).
+     * Merchants with other naming pick the pages explicitly in admin.
+     */
+    private const AUTO_DETECT_PATTERN = '/'
+        // English
+        . 'shipping|deliver|return|refund|faq|customer-service|customer service|contact|terms|payment|warranty|guarantee'
+        // German
+        . '|liefer|versand|zahlung|bezahl|widerruf|rückgabe|rueckgabe|retoure|umtausch|\bagb\b|kontakt|impressum'
+        . '|garantie|gewährleistung|gewaehrleistung|kundenservice|hilfe'
+        // French
+        . '|livraison|expédition|expedition|retour|paiement|remboursement|conditions|mentions-légales|mentions légales'
+        // Spanish
+        . '|envío|envio|entrega|devoluci|pago|condiciones|aviso-legal|aviso legal'
+        // Italian
+        . '|spedizion|consegna|\bresi\b|\breso\b|pagament|condizioni|note-legali'
+        // Dutch
+        . '|verzend|levering|retourneren|betaling|voorwaarden'
+        . '/iu';
 
     public function __construct(
         private readonly Config $config,
@@ -59,7 +77,8 @@ class StoreInfoService
         private readonly TaxRateRepositoryInterface $taxRateRepository,
         private readonly TaxRuleRepositoryInterface $taxRuleRepository,
         private readonly TaxClassRepositoryInterface $taxClassRepository,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly FreeShippingThresholdResolver $freeShippingThreshold
     ) {
     }
 
@@ -75,9 +94,41 @@ class StoreInfoService
             'store' => $this->storeDetails($storeId, (string) $store->getBaseUrl(), (string) $store->getCurrentCurrencyCode()),
             'ships_to' => $this->shipsTo($storeId),
             'shipping_methods' => $this->shippingMethods($storeId),
+            'shipping' => $this->shippingTerms($storeId),
             'payment_methods' => $this->paymentMethods($storeId),
             'tax' => $this->tax($storeId),
             'pages' => $this->pages($storeId, (string) $store->getBaseUrl()),
+        ];
+    }
+
+    /**
+     * The two numbers shoppers ask about before they ask anything else: from
+     * what basket value delivery is free (for the store's own country, where
+     * most orders go) and the minimum order amount checkout enforces.
+     */
+    private function shippingTerms(int $storeId): array
+    {
+        $country = $this->stringConfig('shipping/origin/country_id', $storeId)
+            ?? $this->stringConfig('general/store_information/country_id', $storeId);
+        $threshold = $this->freeShippingThreshold->resolve($storeId, $country);
+
+        $minimum = null;
+        if ($this->scopeConfig->isSetFlag('sales/minimum_order/active', ScopeInterface::SCOPE_STORE, $storeId)) {
+            $amount = $this->stringConfig('sales/minimum_order/amount', $storeId);
+            if ($amount !== null && is_numeric($amount)) {
+                $minimum = [
+                    'amount' => (float) $amount,
+                    'description' => $this->stringConfig('sales/minimum_order/description', $storeId),
+                ];
+            }
+        }
+
+        return [
+            'free_shipping_from' => $threshold['amount'] ?? null,
+            'free_shipping_carrier' => $threshold['carrier'] ?? null,
+            'free_shipping_source' => $threshold['source'] ?? null,
+            'free_shipping_country' => $threshold !== null ? $country : null,
+            'minimum_order' => $minimum,
         ];
     }
 
