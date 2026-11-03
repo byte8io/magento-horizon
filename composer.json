@@ -12,14 +12,14 @@
         "magento/module-customer": "*",
         "magento/module-inventory-api": "*",
         "magento/module-quote": "*",
-        "byte8/module-ai-visibility": "^0.1",
         "magento/module-cms": "*",
         "magento/module-directory": "*",
         "magento/module-shipping": "*",
         "magento/module-sales-rule": "*",
         "magento/module-payment": "*",
         "magento/module-config": "*",
-        "byte8/module-core": "*"
+        "byte8/module-core": "*",
+        "byte8/module-ai-visibility": "^0.1"
     },
     "autoload": {
         "files": [
