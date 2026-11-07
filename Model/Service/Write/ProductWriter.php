@@ -275,6 +275,9 @@ class ProductWriter
             throw new WriteException('"attributes" must be an object of attribute_code → value', 'VALIDATION', 400);
         }
         $allowed = $this->config->getWritableProductAttributes();
+        // EAV silently drops values for attributes outside the product's
+        // attribute set, so refuse those up front instead of "saving" nothing.
+        $setAttributes = $product->getAttributes();
         $changes = [];
         foreach ($attributes as $code => $value) {
             $code = (string) $code;
@@ -293,6 +296,18 @@ class ProductWriter
                 );
             }
             $attribute = $this->attribute($code);
+            if (!isset($setAttributes[$code])) {
+                throw new WriteException(
+                    sprintf(
+                        'Attribute "%s" is not in the "%s" attribute set this product uses, so Magento would not store it. '
+                        . 'Create the product in a set that has it (attribute_set) or add the attribute to the set in admin',
+                        $code,
+                        $this->attributeSetName((int) $product->getAttributeSetId())
+                    ),
+                    'ATTRIBUTE_NOT_IN_SET',
+                    422
+                );
+            }
             [$after, $afterLabel] = $this->attributeValue($attribute, $value);
             $before = $isNew ? null : $this->normalise($product->getData($code));
             if ($isNew || $before !== $after) {
