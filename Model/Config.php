@@ -7,6 +7,7 @@ namespace Byte8\Horizon\Model;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\Serialize\Serializer\Json;
+use Magento\Store\Model\ScopeInterface;
 
 class Config
 {
@@ -14,6 +15,11 @@ class Config
     private const XML_PATH_API_KEY = 'byte8_horizon/general/api_key';
     private const XML_PATH_WRITE_API_KEY = 'byte8_horizon/general/write_api_key';
     private const XML_PATH_WRITE_SCOPES = 'byte8_horizon/general/write_scopes';
+    private const XML_PATH_WRITE_PRODUCT_ATTRIBUTES = 'byte8_horizon/writes/product_attributes';
+    private const XML_PATH_WRITE_MAX_PRICE_CHANGE = 'byte8_horizon/writes/max_price_change_pct';
+    private const XML_PATH_WRITE_MAX_BULK_PRODUCTS = 'byte8_horizon/writes/max_bulk_products';
+    private const XML_PATH_PRODUCT_URL_SUFFIX = 'catalog/seo/product_url_suffix';
+    private const XML_PATH_CATEGORY_URL_SUFFIX = 'catalog/seo/category_url_suffix';
     private const XML_PATH_GATEWAY_URL = 'byte8_horizon/general/gateway_url';
     private const XML_PATH_ASSISTANT_ENABLED = 'byte8_horizon/assistant/enabled';
     private const XML_PATH_KNOWLEDGE_PAGES = 'byte8_horizon/assistant/knowledge_pages';
@@ -124,6 +130,43 @@ class Config
             return [];
         }
         return array_values(array_filter(array_map('trim', explode(',', $value))));
+    }
+
+    /**
+     * Attribute codes (beyond the always-writable core fields) an agent may set
+     * on products through the write key. Comma or newline separated in admin.
+     *
+     * @return string[]
+     */
+    public function getWritableProductAttributes(): array
+    {
+        $value = (string) $this->scopeConfig->getValue(self::XML_PATH_WRITE_PRODUCT_ATTRIBUTES);
+        $codes = preg_split('/[\s,]+/', $value) ?: [];
+        return array_values(array_unique(array_filter(array_map('trim', $codes))));
+    }
+
+    /** Largest price or special-price move per write, in percent; 0 = no cap. */
+    public function getMaxPriceChangePercent(): int
+    {
+        $value = $this->scopeConfig->getValue(self::XML_PATH_WRITE_MAX_PRICE_CHANGE);
+        return $value === null || $value === '' ? 50 : max(0, (int) $value);
+    }
+
+    /** Most SKUs one bulk product write may touch. */
+    public function getMaxBulkProducts(): int
+    {
+        $value = $this->scopeConfig->getValue(self::XML_PATH_WRITE_MAX_BULK_PRODUCTS);
+        return $value === null || $value === '' ? 50 : max(1, (int) $value);
+    }
+
+    public function getProductUrlSuffix(): string
+    {
+        return (string) $this->scopeConfig->getValue(self::XML_PATH_PRODUCT_URL_SUFFIX, ScopeInterface::SCOPE_STORE);
+    }
+
+    public function getCategoryUrlSuffix(): string
+    {
+        return (string) $this->scopeConfig->getValue(self::XML_PATH_CATEGORY_URL_SUFFIX, ScopeInterface::SCOPE_STORE);
     }
 
     public function getGatewayUrl(): ?string

@@ -8,6 +8,11 @@
                 <api_key/>
                 <gateway_url>https://horizon.byte8.io</gateway_url>
             </general>
+            <writes>
+                <product_attributes/>
+                <max_price_change_pct>50</max_price_change_pct>
+                <max_bulk_products>50</max_bulk_products>
+            </writes>
             <assistant>
                 <enabled>0</enabled>
                 <knowledge_pages/>

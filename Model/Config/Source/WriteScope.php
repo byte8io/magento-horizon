@@ -26,7 +26,7 @@ class WriteScope implements OptionSourceInterface
     {
         return [
             ['value' => self::CMS_WRITE, 'label' => __('Content — CMS pages and blocks (create as disabled, update, publish)')],
-            ['value' => self::CATALOG_WRITE, 'label' => __('Catalog — product attributes, prices, stock (not yet served by this version)')],
+            ['value' => self::CATALOG_WRITE, 'label' => __('Catalog — products (create disabled / update, prices within the cap, stock), categories, attribute options and new attributes')],
             ['value' => self::SALES_WRITE, 'label' => __('Sales — invoices, shipments, order comments (not yet served by this version)')],
         ];
     }

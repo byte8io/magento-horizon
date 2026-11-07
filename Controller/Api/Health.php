@@ -58,6 +58,11 @@ class Health extends AbstractAction
             'write' => [
                 'configured' => $this->config->getWriteApiKey() !== null,
                 'scopes' => $this->config->getWriteScopes(),
+                'limits' => [
+                    'product_attributes' => $this->config->getWritableProductAttributes(),
+                    'max_price_change_pct' => $this->config->getMaxPriceChangePercent(),
+                    'max_bulk_products' => $this->config->getMaxBulkProducts(),
+                ],
             ],
         ]);
     }

@@ -26,6 +26,11 @@ class Router implements RouterInterface
         'horizon/api/v1/content/search' => Controller\Api\ContentSearch::class,
         'horizon/api/v1/ai-visibility' => Controller\Api\AiVisibility::class,
         'horizon/api/v1/admin/cms-page' => Controller\Api\Admin\CmsPageSave::class,
+        'horizon/api/v1/admin/product' => Controller\Api\Admin\ProductSave::class,
+        'horizon/api/v1/admin/products' => Controller\Api\Admin\ProductsSave::class,
+        'horizon/api/v1/admin/category' => Controller\Api\Admin\CategorySave::class,
+        'horizon/api/v1/admin/attribute-options' => Controller\Api\Admin\AttributeOptionsAdd::class,
+        'horizon/api/v1/admin/attribute' => Controller\Api\Admin\AttributeCreate::class,
     ];
 
     public function __construct(

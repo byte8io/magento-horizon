@@ -34,6 +34,24 @@
                     <comment><![CDATA[What the write key may change. Enforced here, in the extension, on every write; the dashboard's own scope list only decides which tools agents see. Every write supports a dry run and is recorded in the dashboard's Changes list.]]></comment>
                 </field>
             </group>
+            <group id="writes" translate="label" sortOrder="15" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Agent Writes</label>
+                <comment><![CDATA[Limits for the <code>catalog:write</code> scope. Every product write is previewed as a change set before it is applied and listed under Changes in the Horizon dashboard.]]></comment>
+                <field id="product_attributes" translate="label comment" type="textarea" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                    <label>Writable Product Attributes</label>
+                    <comment><![CDATA[Attribute codes an agent may set under <code>attributes</code> (one per line or comma separated), e.g. <code>color, size, manufacturer, country_of_manufacture</code>. Name, descriptions, price, special price and dates, weight, URL key, meta fields, status, visibility, websites, categories and stock are always writable. Empty = no extra attributes.]]></comment>
+                </field>
+                <field id="max_price_change_pct" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                    <label>Max Price Change (%)</label>
+                    <validate>validate-zero-or-greater validate-digits</validate>
+                    <comment>Refuse a price or special-price change that moves the current value by more than this percentage in one write. Default 50; 0 disables the cap.</comment>
+                </field>
+                <field id="max_bulk_products" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                    <label>Max Products Per Bulk Write</label>
+                    <validate>validate-greater-than-zero validate-digits</validate>
+                    <comment>Most SKUs one bulk update may touch. Default 50.</comment>
+                </field>
+            </group>
             <group id="assistant" translate="label" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
                 <label>AI Shopping Assistant</label>
                 <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
