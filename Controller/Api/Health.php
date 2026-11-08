@@ -62,6 +62,9 @@ class Health extends AbstractAction
                     'product_attributes' => $this->config->getWritableProductAttributes(),
                     'max_price_change_pct' => $this->config->getMaxPriceChangePercent(),
                     'max_bulk_products' => $this->config->getMaxBulkProducts(),
+                    'ship_unpaid' => $this->config->isShipUnpaidAllowed(),
+                    'capture_online' => $this->config->isOnlineCaptureAllowed(),
+                    'customer_attributes' => $this->config->getWritableCustomerAttributes(),
                 ],
             ],
         ]);

@@ -12,6 +12,9 @@
                 <product_attributes/>
                 <max_price_change_pct>50</max_price_change_pct>
                 <max_bulk_products>50</max_bulk_products>
+                <ship_unpaid>0</ship_unpaid>
+                <capture_online>1</capture_online>
+                <customer_attributes/>
             </writes>
             <assistant>
                 <enabled>0</enabled>

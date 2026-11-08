@@ -18,6 +18,9 @@ class Config
     private const XML_PATH_WRITE_PRODUCT_ATTRIBUTES = 'byte8_horizon/writes/product_attributes';
     private const XML_PATH_WRITE_MAX_PRICE_CHANGE = 'byte8_horizon/writes/max_price_change_pct';
     private const XML_PATH_WRITE_MAX_BULK_PRODUCTS = 'byte8_horizon/writes/max_bulk_products';
+    private const XML_PATH_WRITE_SHIP_UNPAID = 'byte8_horizon/writes/ship_unpaid';
+    private const XML_PATH_WRITE_CAPTURE_ONLINE = 'byte8_horizon/writes/capture_online';
+    private const XML_PATH_WRITE_CUSTOMER_ATTRIBUTES = 'byte8_horizon/writes/customer_attributes';
     private const XML_PATH_PRODUCT_URL_SUFFIX = 'catalog/seo/product_url_suffix';
     private const XML_PATH_CATEGORY_URL_SUFFIX = 'catalog/seo/category_url_suffix';
     private const XML_PATH_GATEWAY_URL = 'byte8_horizon/general/gateway_url';
@@ -157,6 +160,36 @@ class Config
     {
         $value = $this->scopeConfig->getValue(self::XML_PATH_WRITE_MAX_BULK_PRODUCTS);
         return $value === null || $value === '' ? 50 : max(1, (int) $value);
+    }
+
+    /** May an agent ship an order that still has an amount due? Default no. */
+    public function isShipUnpaidAllowed(): bool
+    {
+        return $this->scopeConfig->isSetFlag(self::XML_PATH_WRITE_SHIP_UNPAID);
+    }
+
+    /**
+     * May an invoice created by an agent capture the payment through the
+     * payment gateway (when the method supports it)? Default yes; off means
+     * agents only record offline captures.
+     */
+    public function isOnlineCaptureAllowed(): bool
+    {
+        $value = $this->scopeConfig->getValue(self::XML_PATH_WRITE_CAPTURE_ONLINE);
+        return $value === null || $value === '' || (bool) $value;
+    }
+
+    /**
+     * Custom customer attribute codes an agent may set. Comma or newline
+     * separated in admin; empty = none.
+     *
+     * @return string[]
+     */
+    public function getWritableCustomerAttributes(): array
+    {
+        $value = (string) $this->scopeConfig->getValue(self::XML_PATH_WRITE_CUSTOMER_ATTRIBUTES);
+        $codes = preg_split('/[\s,]+/', $value) ?: [];
+        return array_values(array_unique(array_filter(array_map('trim', $codes))));
     }
 
     public function getProductUrlSuffix(): string

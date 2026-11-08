@@ -16,8 +16,9 @@ class WriteScope implements OptionSourceInterface
     public const CMS_WRITE = 'cms:write';
     public const CATALOG_WRITE = 'catalog:write';
     public const SALES_WRITE = 'sales:write';
+    public const CUSTOMERS_WRITE = 'customers:write';
 
-    public const ALL = [self::CMS_WRITE, self::CATALOG_WRITE, self::SALES_WRITE];
+    public const ALL = [self::CMS_WRITE, self::CATALOG_WRITE, self::SALES_WRITE, self::CUSTOMERS_WRITE];
 
     /**
      * @return array<int, array{value: string, label: \Magento\Framework\Phrase}>
@@ -27,7 +28,8 @@ class WriteScope implements OptionSourceInterface
         return [
             ['value' => self::CMS_WRITE, 'label' => __('Content — CMS pages and blocks (create as disabled, update, publish)')],
             ['value' => self::CATALOG_WRITE, 'label' => __('Catalog — products (create disabled / update, prices within the cap, stock), categories, attribute options and new attributes')],
-            ['value' => self::SALES_WRITE, 'label' => __('Sales — invoices, shipments, order comments (not yet served by this version)')],
+            ['value' => self::SALES_WRITE, 'label' => __('Sales — invoice, ship and fulfil orders, order comments, hold / unhold, cancel unpaid orders (never refunds)')],
+            ['value' => self::CUSTOMERS_WRITE, 'label' => __('Customers — create accounts (set-password email, no password), update names / group / DOB / tax id, addresses, newsletter with recorded consent (personal data: preview always required)')],
         ];
     }
 }

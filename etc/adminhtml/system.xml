@@ -36,7 +36,7 @@
             </group>
             <group id="writes" translate="label" sortOrder="15" showInDefault="1" showInWebsite="0" showInStore="0">
                 <label>Agent Writes</label>
-                <comment><![CDATA[Limits for the <code>catalog:write</code> scope. Every product write is previewed as a change set before it is applied and listed under Changes in the Horizon dashboard.]]></comment>
+                <comment><![CDATA[Limits for the <code>catalog:write</code>, <code>sales:write</code> and <code>customers:write</code> scopes. Every write is previewed as a change set before it is applied and listed under Changes in the Horizon dashboard.]]></comment>
                 <field id="product_attributes" translate="label comment" type="textarea" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
                     <label>Writable Product Attributes</label>
                     <comment><![CDATA[Attribute codes an agent may set under <code>attributes</code> (one per line or comma separated), e.g. <code>color, size, manufacturer, country_of_manufacture</code>. Name, descriptions, price, special price and dates, weight, URL key, meta fields, status, visibility, websites, categories and stock are always writable. Empty = no extra attributes.]]></comment>
@@ -50,6 +50,20 @@
                     <label>Max Products Per Bulk Write</label>
                     <validate>validate-greater-than-zero validate-digits</validate>
                     <comment>Most SKUs one bulk update may touch. Default 50.</comment>
+                </field>
+                <field id="ship_unpaid" translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                    <label>Allow Shipping Unpaid Orders</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>sales:write — may an agent create a shipment for an order that still has an amount due (e.g. pay on invoice)? Default No: the agent must invoice first or the write is refused.</comment>
+                </field>
+                <field id="capture_online" translate="label comment" type="select" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                    <label>Allow Online Capture</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>sales:write — may an agent-created invoice capture the payment through the payment provider when the method supports it? Default Yes. No = agents may only record offline captures (money already taken or taken elsewhere).</comment>
+                </field>
+                <field id="customer_attributes" translate="label comment" type="textarea" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                    <label>Writable Customer Attributes</label>
+                    <comment><![CDATA[customers:write — custom customer attribute codes an agent may set under <code>attributes</code> (one per line or comma separated). Names, group, date of birth, gender, tax/VAT id and addresses are always writable; email, password and account deletion never are. Empty = no custom attributes.]]></comment>
                 </field>
             </group>
             <group id="assistant" translate="label" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">

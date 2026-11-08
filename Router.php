@@ -31,6 +31,15 @@ class Router implements RouterInterface
         'horizon/api/v1/admin/category' => Controller\Api\Admin\CategorySave::class,
         'horizon/api/v1/admin/attribute-options' => Controller\Api\Admin\AttributeOptionsAdd::class,
         'horizon/api/v1/admin/attribute' => Controller\Api\Admin\AttributeCreate::class,
+        'horizon/api/v1/admin/order/invoice' => Controller\Api\Admin\OrderInvoice::class,
+        'horizon/api/v1/admin/order/shipment' => Controller\Api\Admin\OrderShipment::class,
+        'horizon/api/v1/admin/order/fulfil' => Controller\Api\Admin\OrderFulfil::class,
+        'horizon/api/v1/admin/order/comment' => Controller\Api\Admin\OrderComment::class,
+        'horizon/api/v1/admin/order/hold' => Controller\Api\Admin\OrderHold::class,
+        'horizon/api/v1/admin/order/cancel' => Controller\Api\Admin\OrderCancel::class,
+        'horizon/api/v1/admin/customer' => Controller\Api\Admin\CustomerSave::class,
+        'horizon/api/v1/admin/customer/address' => Controller\Api\Admin\CustomerAddressSave::class,
+        'horizon/api/v1/admin/customer/newsletter' => Controller\Api\Admin\CustomerNewsletter::class,
     ];
 
     public function __construct(
