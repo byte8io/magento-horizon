@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.0](https://github.com/byte8io/magento-horizon/compare/v1.6.0...v1.7.0) (2026-11-11)
+
+
+### Features
+
+* hand-picked Knowledge Pages may be disabled CMS pages ([2f32c9e](https://github.com/byte8io/magento-horizon/commit/2f32c9e79a69b7570247ce1a2cb2133000f94130))
+* load the assistant widget only after a configured cookie exists ([291af72](https://github.com/byte8io/magento-horizon/commit/291af728984f98ec58deda6b3f8c97ccce0f5cbc))
+
 ## [1.6.0](https://github.com/byte8io/magento-horizon/compare/v1.5.0...v1.6.0) (2026-11-11)
 
 
