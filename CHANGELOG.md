@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.5.0](https://github.com/byte8io/magento-horizon/compare/v1.4.0...v1.5.0) (2026-11-03)
+
+
+### Features
+
+* expose the AI Visibility report to the gateway ([da6bf07](https://github.com/byte8io/magento-horizon/commit/da6bf0723c61dd1fdedb375a3e497e8f1d481289))
+* free-shipping threshold, minimum order and multilingual policy pages in store info ([fd24a17](https://github.com/byte8io/magento-horizon/commit/fd24a17d0a1cb69b992e705c29348ebad8abd256))
+* report robots.txt source and related modules in the health endpoint ([b247649](https://github.com/byte8io/magento-horizon/commit/b2476498ea5924b9bdfbf9f6efc7c619b14e1c40))
+
+
+### Documentation
+
+* AI readiness facts in the feature list ([4e20905](https://github.com/byte8io/magento-horizon/commit/4e209056f02936f3d03168193c3597d715fdd7ca))
+* reorder composer module list ([de6dc8c](https://github.com/byte8io/magento-horizon/commit/de6dc8c6f54fc45394c7b1a011d3fdf72592afed))
+
 ## [1.4.0](https://github.com/byte8io/magento-horizon/compare/v1.3.2...v1.4.0) (2026-10-27)
 
 
