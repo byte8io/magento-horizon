@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.6.0](https://github.com/byte8io/magento-horizon/compare/v1.5.0...v1.6.0) (2026-11-11)
+
+
+### Features
+
+* catalog write endpoints — products, bulk products, categories, attribute options, attributes ([87de3f0](https://github.com/byte8io/magento-horizon/commit/87de3f0e4a667e1b378ae6b0baafd832dc019dcb))
+* sales and customer write endpoints behind sales:write and customers:write ([beb07d3](https://github.com/byte8io/magento-horizon/commit/beb07d3f052a88d125301a07039940ad224f73e3))
+* write key, scopes and the first write endpoint (CMS pages) ([f7ffd3a](https://github.com/byte8io/magento-horizon/commit/f7ffd3ac71908ed92abe4a5b52b011799a700be6))
+
+
+### Bug Fixes
+
+* refuse product attributes outside the product's attribute set ([214ad4a](https://github.com/byte8io/magento-horizon/commit/214ad4a41ff9b6104d954b64313e93fb3f48c7c0))
+
 ## [1.5.0](https://github.com/byte8io/magento-horizon/compare/v1.4.0...v1.5.0) (2026-11-03)
 
 
