@@ -26,6 +26,9 @@ class Config
     private const XML_PATH_GATEWAY_URL = 'byte8_horizon/general/gateway_url';
     private const XML_PATH_ASSISTANT_ENABLED = 'byte8_horizon/assistant/enabled';
     private const XML_PATH_KNOWLEDGE_PAGES = 'byte8_horizon/assistant/knowledge_pages';
+    private const XML_PATH_ASSISTANT_GATE_COOKIE = 'byte8_horizon/assistant/gate_cookie';
+    private const XML_PATH_ASSISTANT_GATE_COOKIE_VALUE = 'byte8_horizon/assistant/gate_cookie_value';
+    private const XML_PATH_ASSISTANT_GATE_EVENT = 'byte8_horizon/assistant/gate_event';
     private const XML_PATH_DELIVERY_HANDLING_DAYS = 'byte8_horizon/delivery/handling_days';
     private const XML_PATH_DELIVERY_BUSINESS_DAYS = 'byte8_horizon/delivery/business_days';
     private const XML_PATH_DELIVERY_TRANSIT_WINDOWS = 'byte8_horizon/delivery/transit_windows';
@@ -83,6 +86,32 @@ class Config
     public function isAssistantEnabled(): bool
     {
         return $this->scopeConfig->isSetFlag(self::XML_PATH_ASSISTANT_ENABLED);
+    }
+
+    /**
+     * Cookie that must be present before the storefront widget loads (age
+     * gates, consent walls). Empty = load the widget immediately.
+     */
+    public function getAssistantGateCookie(): string
+    {
+        return trim((string) $this->scopeConfig->getValue(self::XML_PATH_ASSISTANT_GATE_COOKIE));
+    }
+
+    /**
+     * Exact value the gate cookie must carry. Empty = any non-empty value.
+     */
+    public function getAssistantGateCookieValue(): string
+    {
+        return trim((string) $this->scopeConfig->getValue(self::XML_PATH_ASSISTANT_GATE_COOKIE_VALUE));
+    }
+
+    /**
+     * Optional window event the gate dispatches when the visitor passes, so
+     * the widget loads at once instead of at the next cookie check.
+     */
+    public function getAssistantGateEvent(): string
+    {
+        return trim((string) $this->scopeConfig->getValue(self::XML_PATH_ASSISTANT_GATE_EVENT));
     }
 
     /**

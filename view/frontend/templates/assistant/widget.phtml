@@ -4,7 +4,10 @@
  * Byte8 Horizon — AI Shopping Assistant widget loader.
  *
  * Renders a single deferred script tag when the assistant is enabled both in
- * the Magento configuration and in the merchant's Horizon dashboard.
+ * the Magento configuration and in the merchant's Horizon dashboard. With
+ * "Load After Cookie" set, the tag loads the module's gate script instead,
+ * which injects the widget only once that cookie exists (age gates, consent
+ * walls) and passes every data-* attribute through.
  */
 
 declare(strict_types=1);
@@ -15,5 +18,26 @@ declare(strict_types=1);
 $viewModel = $block->getData('view_model');
 ?>
 <?php if ($viewModel->isActive()): ?>
-<script src="<?= $escaper->escapeUrl($viewModel->getScriptUrl()) ?>" data-key="<?= $escaper->escapeHtmlAttr($viewModel->getPublishableKey()) ?>" data-name="<?= $escaper->escapeHtmlAttr($viewModel->getAssistantName()) ?>" data-accent="<?= $escaper->escapeHtmlAttr($viewModel->getAccentColor()) ?>" data-lang="<?= $escaper->escapeHtmlAttr($viewModel->getLanguage()) ?>"<?php if ($viewModel->getWelcomeMessage() !== ''): ?> data-greeting="<?= $escaper->escapeHtmlAttr($viewModel->getWelcomeMessage()) ?>"<?php endif; ?> defer></script>
+<?php
+$attributes = [
+    'data-key' => $viewModel->getPublishableKey(),
+    'data-name' => $viewModel->getAssistantName(),
+    'data-accent' => $viewModel->getAccentColor(),
+    'data-lang' => $viewModel->getLanguage(),
+];
+if ($viewModel->getWelcomeMessage() !== '') {
+    $attributes['data-greeting'] = $viewModel->getWelcomeMessage();
+}
+$gateCookie = $viewModel->getGateCookie();
+if ($gateCookie !== '') {
+    $scriptSrc = $block->getViewFileUrl('Byte8_Horizon::js/assistant-gate.js');
+    $attributes['data-src'] = $viewModel->getScriptUrl();
+    $attributes['data-gate-cookie'] = $gateCookie;
+    $attributes['data-gate-value'] = $viewModel->getGateCookieValue();
+    $attributes['data-gate-event'] = $viewModel->getGateEvent();
+} else {
+    $scriptSrc = $viewModel->getScriptUrl();
+}
+?>
+<script src="<?= $escaper->escapeUrl($scriptSrc) ?>"<?php foreach ($attributes as $attribute => $value): ?> <?= /* @noEscape */ $attribute ?>="<?= $escaper->escapeHtmlAttr($value) ?>"<?php endforeach; ?> defer></script>
 <?php endif; ?>

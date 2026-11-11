@@ -87,6 +87,25 @@ class AssistantWidget implements ArgumentInterface
         return is_string($value) ? trim($value) : '';
     }
 
+    /**
+     * Cookie the widget waits for before loading (admin setting). Empty =
+     * the plain script tag, loaded on every page.
+     */
+    public function getGateCookie(): string
+    {
+        return $this->config->getAssistantGateCookie();
+    }
+
+    public function getGateCookieValue(): string
+    {
+        return $this->config->getAssistantGateCookieValue();
+    }
+
+    public function getGateEvent(): string
+    {
+        return $this->config->getAssistantGateEvent();
+    }
+
     private function getBootstrap(): ?array
     {
         if (!$this->bootstrapLoaded) {

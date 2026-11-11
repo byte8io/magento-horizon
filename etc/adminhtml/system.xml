@@ -79,6 +79,18 @@
                     <can_be_empty>1</can_be_empty>
                     <comment><![CDATA[CMS pages the assistant may quote when shoppers ask about delivery times, returns, refunds, payment or how to contact you. Leave empty to auto-detect pages whose title or URL key mentions shipping, delivery, returns, FAQ, customer service, contact, terms or payment. Page content is served as plain text via <code>/horizon/api/v1/store-info</code>.]]></comment>
                 </field>
+                <field id="gate_cookie" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                    <label>Load After Cookie</label>
+                    <comment><![CDATA[Name of a cookie that must exist before the chat widget appears, e.g. the cookie your age-verification or consent gate sets (<code>age-confirmation</code>). The page is re-checked every 1.5 seconds until the cookie appears, so no theme changes are needed. Leave empty to show the widget on every page immediately.]]></comment>
+                </field>
+                <field id="gate_cookie_value" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                    <label>Required Cookie Value</label>
+                    <comment><![CDATA[Only load when the cookie above has exactly this value, e.g. <code>true</code>. Leave empty to accept any non-empty value.]]></comment>
+                </field>
+                <field id="gate_event" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                    <label>Gate Passed Event</label>
+                    <comment><![CDATA[Optional: name of a browser event your gate dispatches on <code>window</code> when the visitor passes (e.g. <code>ageVerificationCompleted</code>). The widget then loads instantly instead of at the next cookie check.]]></comment>
+                </field>
             </group>
             <group id="delivery" translate="label comment" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
                 <label>Delivery Estimates</label>
