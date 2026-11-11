@@ -216,17 +216,23 @@ class StoreInfoService
     }
 
     /**
-     * @return array<int, array{identifier:string,title:string,url:string,content:string}>
+     * Knowledge pages as plain text. Pages picked by hand in admin may be
+     * disabled in Magento: the merchant chose them, so they are served as
+     * assistant-only knowledge with no URL (there is nothing a shopper could
+     * open). Auto-detection only ever considers active pages.
+     *
+     * @return array<int, array{identifier:string,title:string,url:?string,published:bool,content:string}>
      */
     private function pages(int $storeId, string $baseUrl): array
     {
         $collection = $this->pageCollectionFactory->create();
         $collection->addStoreFilter($storeId);
-        $collection->addFieldToFilter('is_active', 1);
 
         $selected = $this->config->getKnowledgePageIdentifiers();
         if ($selected !== []) {
             $collection->addFieldToFilter('identifier', ['in' => $selected]);
+        } else {
+            $collection->addFieldToFilter('is_active', 1);
         }
         $collection->setOrder('title', 'ASC');
 
@@ -247,10 +253,12 @@ class StoreInfoService
             $text = mb_substr($text, 0, min(self::MAX_PAGE_CHARS, $budget));
             $budget -= mb_strlen($text);
 
+            $published = (bool) $page->isActive();
             $pages[] = [
                 'identifier' => $identifier,
                 'title' => $title,
-                'url' => rtrim($baseUrl, '/') . '/' . $identifier,
+                'url' => $published ? rtrim($baseUrl, '/') . '/' . $identifier : null,
+                'published' => $published,
                 'content' => $text,
             ];
 

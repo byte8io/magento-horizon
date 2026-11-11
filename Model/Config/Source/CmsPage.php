@@ -8,8 +8,10 @@ use Magento\Cms\Model\ResourceModel\Page\CollectionFactory;
 use Magento\Framework\Data\OptionSourceInterface;
 
 /**
- * Active CMS pages keyed by identifier (the core Cms source keys by page_id,
- * which is useless to the gateway and unstable across environments).
+ * CMS pages keyed by identifier (the core Cms source keys by page_id, which
+ * is useless to the gateway and unstable across environments). Disabled
+ * pages are listed too: picked by hand they become assistant-only knowledge
+ * that shoppers never see on the storefront.
  */
 class CmsPage implements OptionSourceInterface
 {
@@ -21,13 +23,17 @@ class CmsPage implements OptionSourceInterface
     public function toOptionArray(): array
     {
         $collection = $this->collectionFactory->create();
-        $collection->addFieldToFilter('is_active', 1)->setOrder('title', 'ASC');
+        $collection->setOrder('title', 'ASC');
 
         $options = [];
         foreach ($collection as $page) {
+            $label = sprintf('%s (%s)', $page->getTitle(), $page->getIdentifier());
+            if (!$page->isActive()) {
+                $label .= ' — ' . __('disabled, assistant only');
+            }
             $options[] = [
                 'value' => (string) $page->getIdentifier(),
-                'label' => sprintf('%s (%s)', $page->getTitle(), $page->getIdentifier()),
+                'label' => $label,
             ];
         }
         return $options;
