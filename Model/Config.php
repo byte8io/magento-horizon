@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Byte8\Horizon\Model;
 
+use Byte8\Horizon\Model\Config\Source\WidgetPosition;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\Serialize\Serializer\Json;
@@ -29,6 +30,11 @@ class Config
     private const XML_PATH_ASSISTANT_GATE_COOKIE = 'byte8_horizon/assistant/gate_cookie';
     private const XML_PATH_ASSISTANT_GATE_COOKIE_VALUE = 'byte8_horizon/assistant/gate_cookie_value';
     private const XML_PATH_ASSISTANT_GATE_EVENT = 'byte8_horizon/assistant/gate_event';
+    private const XML_PATH_ASSISTANT_POSITION = 'byte8_horizon/assistant/position';
+    private const XML_PATH_ASSISTANT_OFFSET_BOTTOM = 'byte8_horizon/assistant/offset_bottom';
+    private const XML_PATH_ASSISTANT_OFFSET_SIDE = 'byte8_horizon/assistant/offset_side';
+    public const WIDGET_DEFAULT_OFFSET = 24;
+    private const WIDGET_MAX_OFFSET = 400;
     private const XML_PATH_DELIVERY_HANDLING_DAYS = 'byte8_horizon/delivery/handling_days';
     private const XML_PATH_DELIVERY_BUSINESS_DAYS = 'byte8_horizon/delivery/business_days';
     private const XML_PATH_DELIVERY_TRANSIT_WINDOWS = 'byte8_horizon/delivery/transit_windows';
@@ -112,6 +118,46 @@ class Config
     public function getAssistantGateEvent(): string
     {
         return trim((string) $this->scopeConfig->getValue(self::XML_PATH_ASSISTANT_GATE_EVENT));
+    }
+
+    /**
+     * Viewport corner for the launcher: WidgetPosition::BOTTOM_RIGHT (default)
+     * or BOTTOM_LEFT.
+     */
+    public function getAssistantPosition(): string
+    {
+        $value = (string) $this->scopeConfig->getValue(self::XML_PATH_ASSISTANT_POSITION);
+
+        return $value === WidgetPosition::BOTTOM_LEFT ? WidgetPosition::BOTTOM_LEFT : WidgetPosition::BOTTOM_RIGHT;
+    }
+
+    /**
+     * Distance in px between the launcher and the bottom edge (default 24),
+     * so it clears a theme's own back-to-top or cookie buttons.
+     */
+    public function getAssistantOffsetBottom(): int
+    {
+        return $this->offset($this->scopeConfig->getValue(self::XML_PATH_ASSISTANT_OFFSET_BOTTOM));
+    }
+
+    /**
+     * Distance in px between the launcher and the side edge (default 24).
+     */
+    public function getAssistantOffsetSide(): int
+    {
+        return $this->offset($this->scopeConfig->getValue(self::XML_PATH_ASSISTANT_OFFSET_SIDE));
+    }
+
+    /**
+     * @param mixed $raw
+     */
+    private function offset($raw): int
+    {
+        if ($raw === null || trim((string) $raw) === '' || !is_numeric($raw)) {
+            return self::WIDGET_DEFAULT_OFFSET;
+        }
+
+        return max(0, min(self::WIDGET_MAX_OFFSET, (int) $raw));
     }
 
     /**

@@ -37,6 +37,8 @@ use Psr\Log\LoggerInterface;
 class StoreInfoService
 {
     private const MAX_PAGE_CHARS = 6000;
+    /** A hand-picked page is a deliberate spend of the budget: allow it more room. */
+    private const MAX_SELECTED_PAGE_CHARS = 12000;
     private const MAX_TOTAL_CHARS = 24000;
     private const MAX_LISTED_COUNTRIES = 40;
     private const MAX_LISTED_RATES = 40;
@@ -238,6 +240,7 @@ class StoreInfoService
 
         $pages = [];
         $budget = self::MAX_TOTAL_CHARS;
+        $pageCap = $selected === [] ? self::MAX_PAGE_CHARS : self::MAX_SELECTED_PAGE_CHARS;
         /** @var Page $page */
         foreach ($collection as $page) {
             $identifier = (string) $page->getIdentifier();
@@ -250,7 +253,7 @@ class StoreInfoService
             if ($text === '') {
                 continue;
             }
-            $text = mb_substr($text, 0, min(self::MAX_PAGE_CHARS, $budget));
+            $text = mb_substr($text, 0, min($pageCap, $budget));
             $budget -= mb_strlen($text);
 
             $published = (bool) $page->isActive();

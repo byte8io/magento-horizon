@@ -106,6 +106,24 @@ class AssistantWidget implements ArgumentInterface
         return $this->config->getAssistantGateEvent();
     }
 
+    /**
+     * Launcher corner (admin setting): bottom-right or bottom-left.
+     */
+    public function getPosition(): string
+    {
+        return $this->config->getAssistantPosition();
+    }
+
+    public function getOffsetBottom(): int
+    {
+        return $this->config->getAssistantOffsetBottom();
+    }
+
+    public function getOffsetSide(): int
+    {
+        return $this->config->getAssistantOffsetSide();
+    }
+
     private function getBootstrap(): ?array
     {
         if (!$this->bootstrapLoaded) {

@@ -12,6 +12,9 @@
 
 declare(strict_types=1);
 
+use Byte8\Horizon\Model\Config;
+use Byte8\Horizon\Model\Config\Source\WidgetPosition;
+
 /** @var Magento\Framework\View\Element\Template $block */
 /** @var Magento\Framework\Escaper $escaper */
 /** @var Byte8\Horizon\ViewModel\AssistantWidget $viewModel */
@@ -27,6 +30,16 @@ $attributes = [
 ];
 if ($viewModel->getWelcomeMessage() !== '') {
     $attributes['data-greeting'] = $viewModel->getWelcomeMessage();
+}
+// Launcher placement; the widget's own defaults are bottom-right, 24 px.
+if ($viewModel->getPosition() !== WidgetPosition::BOTTOM_RIGHT) {
+    $attributes['data-position'] = $viewModel->getPosition();
+}
+if ($viewModel->getOffsetBottom() !== Config::WIDGET_DEFAULT_OFFSET) {
+    $attributes['data-offset-bottom'] = (string) $viewModel->getOffsetBottom();
+}
+if ($viewModel->getOffsetSide() !== Config::WIDGET_DEFAULT_OFFSET) {
+    $attributes['data-offset-side'] = (string) $viewModel->getOffsetSide();
 }
 $gateCookie = $viewModel->getGateCookie();
 if ($gateCookie !== '') {

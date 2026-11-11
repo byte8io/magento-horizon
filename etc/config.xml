@@ -22,6 +22,9 @@
                 <gate_cookie/>
                 <gate_cookie_value/>
                 <gate_event/>
+                <position>bottom-right</position>
+                <offset_bottom>24</offset_bottom>
+                <offset_side>24</offset_side>
             </assistant>
             <delivery>
                 <handling_days>1</handling_days>
