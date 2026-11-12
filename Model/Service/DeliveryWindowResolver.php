@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Byte8\Horizon\Model\Service;
 
 use Byte8\Horizon\Model\Config;
+use Byte8\Horizon\Model\Config\Source\DeliveryDays;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
 
@@ -18,7 +19,9 @@ use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
  * weaker `source` so the assistant can hedge.
  *
  * All date arithmetic happens here, in the store's timezone, so the model
- * never has to count days itself.
+ * never has to count days itself. Which days count (`delivery_days`:
+ * calendar, Monday–Friday or Monday–Saturday) is a store setting; a title
+ * that says "business days" never counts weekends even when the store does.
  */
 class DeliveryWindowResolver
 {
@@ -39,11 +42,11 @@ class DeliveryWindowResolver
     /**
      * Resolve the transit window for a carrier/method.
      *
-     * @return array{min_days:int,max_days:int,business_days:bool,source:string}|null
+     * @return array{min_days:int,max_days:int,business_days:bool,delivery_days:string,source:string}|null
      */
     public function transitWindow(string $carrierCode, ?string $methodCode, string ...$titles): ?array
     {
-        $businessDays = $this->config->isDeliveryBusinessDays();
+        $deliveryDays = $this->config->getDeliveryDays();
 
         $best = null;
         foreach ($this->config->getTransitWindows() as $row) {
@@ -57,7 +60,8 @@ class DeliveryWindowResolver
             $candidate = [
                 'min_days' => max(0, (int) ($row['min_days'] ?? 0)),
                 'max_days' => max(0, (int) ($row['max_days'] ?? 0)),
-                'business_days' => $businessDays,
+                'business_days' => $deliveryDays !== DeliveryDays::CALENDAR,
+                'delivery_days' => $deliveryDays,
                 'source' => self::SOURCE_CONFIGURED,
             ];
             // A method-specific row beats a carrier-wide row.
@@ -81,7 +85,7 @@ class DeliveryWindowResolver
         $titles[] = (string) $this->scopeConfig->getValue(sprintf('carriers/%s/title', $carrierCode));
         $titles[] = (string) $this->scopeConfig->getValue(sprintf('carriers/%s/name', $carrierCode));
         foreach ($titles as $title) {
-            $parsed = $this->parseTitle($title, $businessDays);
+            $parsed = $this->parseTitle($title, $deliveryDays);
             if ($parsed !== null) {
                 return $parsed;
             }
@@ -97,6 +101,27 @@ class DeliveryWindowResolver
     public function isBusinessDays(): bool
     {
         return $this->config->isDeliveryBusinessDays();
+    }
+
+    /**
+     * `calendar` | `mon_fri` | `mon_sat` — which days handling and transit days count.
+     */
+    public function deliveryDays(): string
+    {
+        return $this->config->getDeliveryDays();
+    }
+
+    /**
+     * `dates` | `days` — whether arrival dates are shared with the assistant.
+     */
+    public function estimateFormat(): string
+    {
+        return $this->config->getDeliveryEstimateFormat();
+    }
+
+    public function showsDates(): bool
+    {
+        return $this->config->showsDeliveryDates();
     }
 
     /**
@@ -118,59 +143,77 @@ class DeliveryWindowResolver
     {
         $basis = $this->timezone->date(new \DateTime($basisDate, new \DateTimeZone('UTC')));
         $basis->setTime(0, 0, 0);
-        $business = (bool) $window['business_days'];
+        $mode = $this->windowDays($window);
 
-        $start = $this->addDays($basis, $leadDays, $business);
+        $start = $this->addDays($basis, $leadDays, $mode);
         return [
-            'earliest' => $this->addDays($start, (int) $window['min_days'], $business)->format('Y-m-d'),
-            'latest' => $this->addDays($start, (int) $window['max_days'], $business)->format('Y-m-d'),
+            'earliest' => $this->addDays($start, (int) $window['min_days'], $mode)->format('Y-m-d'),
+            'latest' => $this->addDays($start, (int) $window['max_days'], $mode)->format('Y-m-d'),
         ];
     }
 
-    private function addDays(\DateTimeInterface $from, int $days, bool $businessDays): \DateTime
+    /**
+     * A window built before `delivery_days` existed only carries the boolean.
+     */
+    private function windowDays(array $window): string
+    {
+        if (isset($window['delivery_days'])) {
+            return DeliveryDays::normalize($window['delivery_days']);
+        }
+        return !empty($window['business_days']) ? DeliveryDays::MON_FRI : DeliveryDays::CALENDAR;
+    }
+
+    private function addDays(\DateTimeInterface $from, int $days, string $mode): \DateTime
     {
         $date = \DateTime::createFromInterface($from);
         if ($days <= 0) {
             return $date;
         }
-        if (!$businessDays) {
+        if ($mode === DeliveryDays::CALENDAR) {
             return $date->modify(sprintf('+%d days', $days));
         }
+        // ISO weekday: 6 = Saturday, 7 = Sunday.
+        $lastCountedDay = $mode === DeliveryDays::MON_SAT ? 6 : 5;
         $remaining = $days;
         while ($remaining > 0) {
             $date->modify('+1 day');
-            if ((int) $date->format('N') < 6) {
+            if ((int) $date->format('N') <= $lastCountedDay) {
                 $remaining--;
             }
         }
         return $date;
     }
 
-    private function parseTitle(string $title, bool $businessDays): ?array
+    private function parseTitle(string $title, string $deliveryDays): ?array
     {
         if ($title === '') {
             return null;
         }
         if (preg_match(self::TITLE_RANGE, $title, $m)) {
-            return [
-                'min_days' => (int) $m[1],
-                'max_days' => max((int) $m[1], (int) $m[2]),
-                'business_days' => $businessDays || !empty($m[3]),
-                'source' => self::SOURCE_TITLE,
-            ];
+            return $this->titleWindow((int) $m[1], (int) $m[2], !empty($m[3]), $deliveryDays);
         }
         if (preg_match(self::TITLE_NEXT_DAY, $title)) {
-            return ['min_days' => 1, 'max_days' => 1, 'business_days' => $businessDays, 'source' => self::SOURCE_TITLE];
+            return $this->titleWindow(1, 1, false, $deliveryDays);
         }
         if (preg_match(self::TITLE_SINGLE, $title, $m)) {
-            $days = (int) $m[1];
-            return [
-                'min_days' => $days,
-                'max_days' => $days,
-                'business_days' => $businessDays || !empty($m[2]),
-                'source' => self::SOURCE_TITLE,
-            ];
+            return $this->titleWindow((int) $m[1], (int) $m[1], !empty($m[2]), $deliveryDays);
         }
         return null;
+    }
+
+    /**
+     * "3-5 business days" in a title means Monday–Friday even when the store
+     * counts every day; otherwise the store setting applies.
+     */
+    private function titleWindow(int $min, int $max, bool $saysBusiness, string $deliveryDays): array
+    {
+        $mode = $saysBusiness && $deliveryDays === DeliveryDays::CALENDAR ? DeliveryDays::MON_FRI : $deliveryDays;
+        return [
+            'min_days' => $min,
+            'max_days' => max($min, $max),
+            'business_days' => $mode !== DeliveryDays::CALENDAR,
+            'delivery_days' => $mode,
+            'source' => self::SOURCE_TITLE,
+        ];
     }
 }

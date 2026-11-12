@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Byte8\Horizon\Model;
 
+use Byte8\Horizon\Model\Config\Source\DeliveryDays;
+use Byte8\Horizon\Model\Config\Source\EstimateFormat;
 use Byte8\Horizon\Model\Config\Source\WidgetPosition;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
@@ -37,6 +39,7 @@ class Config
     private const WIDGET_MAX_OFFSET = 400;
     private const XML_PATH_DELIVERY_HANDLING_DAYS = 'byte8_horizon/delivery/handling_days';
     private const XML_PATH_DELIVERY_BUSINESS_DAYS = 'byte8_horizon/delivery/business_days';
+    private const XML_PATH_DELIVERY_ESTIMATE_FORMAT = 'byte8_horizon/delivery/estimate_format';
     private const XML_PATH_DELIVERY_TRANSIT_WINDOWS = 'byte8_horizon/delivery/transit_windows';
 
     public function __construct(
@@ -55,11 +58,35 @@ class Config
     }
 
     /**
-     * Whether handling + transit days are counted as business days (Mon–Fri).
+     * Which days count when handling + transit days are added:
+     * `calendar`, `mon_fri` or `mon_sat` (see Source\DeliveryDays).
+     */
+    public function getDeliveryDays(): string
+    {
+        return DeliveryDays::normalize($this->scopeConfig->getValue(self::XML_PATH_DELIVERY_BUSINESS_DAYS));
+    }
+
+    /**
+     * Whether handling + transit days skip at least Sundays.
      */
     public function isDeliveryBusinessDays(): bool
     {
-        return $this->scopeConfig->isSetFlag(self::XML_PATH_DELIVERY_BUSINESS_DAYS);
+        return $this->getDeliveryDays() !== DeliveryDays::CALENDAR;
+    }
+
+    /**
+     * `dates` (arrival dates are sent) or `days` (day counts only; the
+     * module keeps the dates to itself and still flags late orders).
+     */
+    public function getDeliveryEstimateFormat(): string
+    {
+        $value = (string) $this->scopeConfig->getValue(self::XML_PATH_DELIVERY_ESTIMATE_FORMAT);
+        return $value === EstimateFormat::DAYS ? EstimateFormat::DAYS : EstimateFormat::DATES;
+    }
+
+    public function showsDeliveryDates(): bool
+    {
+        return $this->getDeliveryEstimateFormat() === EstimateFormat::DATES;
     }
 
     /**

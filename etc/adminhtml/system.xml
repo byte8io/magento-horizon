@@ -109,22 +109,27 @@
             </group>
             <group id="delivery" translate="label comment" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
                 <label>Delivery Estimates</label>
-                <comment>Lets the assistant tell shoppers roughly when an order will arrive. Dates are computed by the module in the store timezone; the AI only reads them.</comment>
+                <comment>Lets the assistant tell shoppers roughly when an order will arrive. Dates are computed by the module in the store timezone; the AI only reads them, or only the day counts if you prefer.</comment>
                 <field id="handling_days" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Handling Time (days)</label>
                     <validate>validate-digits</validate>
                     <comment>Days between an order being placed and being dispatched. Used for orders that haven't shipped yet and for quotes to new shoppers.</comment>
                 </field>
                 <field id="business_days" translate="label comment" type="select" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
-                    <label>Count Business Days Only</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment>Yes = skip Saturdays and Sundays when adding handling and transit days.</comment>
+                    <label>Delivery Days</label>
+                    <source_model>Byte8\Horizon\Model\Config\Source\DeliveryDays</source_model>
+                    <comment>Which days count when adding handling and transit days. Pick Monday to Saturday when your carrier delivers on Saturdays (DHL, Royal Mail, UPS Saturday), so a Thursday dispatch with 1-2 days does not jump to Monday.</comment>
+                </field>
+                <field id="estimate_format" translate="label comment" type="select" sortOrder="25" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Tell Shoppers</label>
+                    <source_model>Byte8\Horizon\Model\Config\Source\EstimateFormat</source_model>
+                    <comment>Arrival dates: "between 16 and 17 November". Number of days only: "1 to 2 business days after dispatch" - the dates are still computed to spot late orders, but never shown.</comment>
                 </field>
                 <field id="transit_windows" translate="label comment" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Transit Times</label>
                     <frontend_model>Byte8\Horizon\Block\Adminhtml\Form\Field\TransitWindows</frontend_model>
                     <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
-                    <comment><![CDATA[Min/max days in transit per carrier (optionally per method code, e.g. <code>express</code>). When a carrier has no row here, the assistant falls back to a time written in the method title, e.g. "Standard Delivery (3-5 days)"; otherwise it gives no date.]]></comment>
+                    <comment><![CDATA[Min/max days in transit per carrier (optionally per method code, e.g. <code>express</code>). When a carrier has no row here, the assistant falls back to a time written in the method title, e.g. "Standard Delivery (3-5 days)"; otherwise it gives no estimate.]]></comment>
                 </field>
             </group>
         </section>

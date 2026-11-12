@@ -429,6 +429,8 @@ class OrderService
             'transit_min_days' => $window['min_days'] ?? null,
             'transit_max_days' => $window['max_days'] ?? null,
             'business_days' => $window['business_days'] ?? $this->deliveryWindows->isBusinessDays(),
+            'delivery_days' => $window['delivery_days'] ?? $this->deliveryWindows->deliveryDays(),
+            'estimate_format' => $this->deliveryWindows->estimateFormat(),
             'source' => $window['source'] ?? null,
             'earliest' => null,
             'latest' => null,
@@ -444,8 +446,12 @@ class OrderService
             $estimate['basis'] === 'order_placed' ? $handlingDays : 0,
             $window
         );
-        $estimate['earliest'] = $range['earliest'];
-        $estimate['latest'] = $range['latest'];
+        // With the "days only" format the dates stay here: the assistant gets
+        // the day counts and the late flag, never a calendar date to quote.
+        if ($this->deliveryWindows->showsDates()) {
+            $estimate['earliest'] = $range['earliest'];
+            $estimate['latest'] = $range['latest'];
+        }
         $estimate['is_late'] = $today > $range['latest'];
 
         return $estimate;

@@ -93,6 +93,8 @@ class ShippingEstimateService
             'free_shipping_reason' => null,
             'today' => $this->deliveryWindows->today(),
             'handling_days' => $this->deliveryWindows->handlingDays(),
+            'delivery_days' => $this->deliveryWindows->deliveryDays(),
+            'estimate_format' => $this->deliveryWindows->estimateFormat(),
         ];
 
         if (!$country->getId()) {
@@ -192,7 +194,8 @@ class ShippingEstimateService
                 (string) $rate->getMethodTitle(),
                 (string) $rate->getCarrierTitle()
             );
-            $estimated = $window !== null
+            // Dates only when the merchant shows them; otherwise the day counts speak.
+            $estimated = $window !== null && $this->deliveryWindows->showsDates()
                 ? $this->deliveryWindows->project('now', $result['handling_days'], $window)
                 : null;
             $result['methods'][] = [
@@ -204,6 +207,7 @@ class ShippingEstimateService
                 'transit_min_days' => $window['min_days'] ?? null,
                 'transit_max_days' => $window['max_days'] ?? null,
                 'business_days' => $window['business_days'] ?? null,
+                'delivery_days' => $window['delivery_days'] ?? null,
                 'transit_source' => $window['source'] ?? null,
                 'estimated_delivery' => $estimated,
             ];
