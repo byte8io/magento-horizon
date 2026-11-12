@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.1](https://github.com/byte8io/magento-horizon/compare/v1.8.0...v1.8.1) (2026-11-12)
+
+
+### Bug Fixes
+
+* selected Knowledge Pages spend the budget on FAQ and policy pages first ([a2d2935](https://github.com/byte8io/magento-horizon/commit/a2d29350d3e4cef3582f14c8a0ce2366ae5a8aca))
+
 ## [1.8.0](https://github.com/byte8io/magento-horizon/compare/v1.7.0...v1.8.0) (2026-11-12)
 
 
