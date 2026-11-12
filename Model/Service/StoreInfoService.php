@@ -238,11 +238,24 @@ class StoreInfoService
         }
         $collection->setOrder('title', 'ASC');
 
+        // The budget is spent in list order, so put the pages most likely to
+        // answer a shopper first: assistant-only (disabled) pages, then pages
+        // whose name says shipping / payment / returns / FAQ / contact, then
+        // the rest by title. Otherwise "AGB" and "Datenschutz" alone can use
+        // up the allowance and the FAQ never reaches the assistant.
+        $items = $collection->getItems();
+        if ($selected !== []) {
+            uasort($items, function (Page $a, Page $b): int {
+                return $this->pagePriority($a) <=> $this->pagePriority($b)
+                    ?: strcmp((string) $a->getTitle(), (string) $b->getTitle());
+            });
+        }
+
         $pages = [];
         $budget = self::MAX_TOTAL_CHARS;
         $pageCap = $selected === [] ? self::MAX_PAGE_CHARS : self::MAX_SELECTED_PAGE_CHARS;
         /** @var Page $page */
-        foreach ($collection as $page) {
+        foreach ($items as $page) {
             $identifier = (string) $page->getIdentifier();
             $title = (string) $page->getTitle();
             if ($selected === [] && !$this->looksLikePolicyPage($identifier, $title)) {
@@ -271,6 +284,19 @@ class StoreInfoService
         }
 
         return $pages;
+    }
+
+    /**
+     * 0 = assistant-only page (disabled in Magento, selected on purpose),
+     * 1 = policy-looking page, 2 = anything else.
+     */
+    private function pagePriority(Page $page): int
+    {
+        if (!$page->isActive()) {
+            return 0;
+        }
+
+        return $this->looksLikePolicyPage((string) $page->getIdentifier(), (string) $page->getTitle()) ? 1 : 2;
     }
 
     private function looksLikePolicyPage(string $identifier, string $title): bool
