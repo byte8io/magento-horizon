@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/byte8io/magento-horizon/compare/v1.7.0...v1.8.0) (2026-11-12)
+
+
+### Features
+
+* widget position and edge offsets; hand-picked Knowledge Pages up to 12k chars ([3a2f824](https://github.com/byte8io/magento-horizon/commit/3a2f82495c7bc98684fa4aaa8d3147948a407730))
+
 ## [1.7.0](https://github.com/byte8io/magento-horizon/compare/v1.6.0...v1.7.0) (2026-11-11)
 
 
