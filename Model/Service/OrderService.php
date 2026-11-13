@@ -7,7 +7,9 @@ namespace Byte8\Horizon\Model\Service;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Api\SortOrderBuilder;
 use Magento\Sales\Api\Data\OrderInterface;
+use Magento\Sales\Api\Data\TransactionInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
+use Magento\Sales\Api\TransactionRepositoryInterface;
 use Magento\Sales\Model\Order;
 
 class OrderService
@@ -18,7 +20,8 @@ class OrderService
         private readonly OrderRepositoryInterface $orderRepository,
         private readonly SearchCriteriaBuilder $searchCriteriaBuilder,
         private readonly SortOrderBuilder $sortOrderBuilder,
-        private readonly DeliveryWindowResolver $deliveryWindows
+        private readonly DeliveryWindowResolver $deliveryWindows,
+        private readonly TransactionRepositoryInterface $transactionRepository
     ) {
     }
 
@@ -186,8 +189,17 @@ class OrderService
     /**
      * Payment position of the order, so an assistant can answer "is it paid?"
      * without seeing card or account details. `status` is one of: paid,
-     * partially_paid, unpaid, awaiting_payment, payment_review, refunded,
-     * partially_refunded, canceled, free.
+     * partially_paid, authorized, unpaid, awaiting_payment, payment_review,
+     * refunded, partially_refunded, canceled, free.
+     *
+     * `authorized` is the authorise-now-capture-on-dispatch position most
+     * PayPal, wallet, card and buy-now-pay-later integrations leave an order
+     * in: the provider has approved and reserved the amount, nothing has been
+     * captured yet, and the order usually sits in `processing` with nothing
+     * paid. Before this status existed it read as `unpaid`, which assistants
+     * relayed as a missing payment. Detected from the authorization
+     * transaction rather than `amount_authorized`, because some providers
+     * (Mollie's Klarna, for one) record the transaction but not the amount.
      *
      * @return array<string, mixed>
      */
@@ -198,6 +210,7 @@ class OrderService
         $due = (float) ($order->getTotalDue() ?? 0);
         $refunded = (float) ($order->getTotalRefunded() ?? 0);
         $state = (string) $order->getState();
+        $payment = $order->getPayment();
 
         $paidAt = null;
         foreach ($order->getInvoiceCollection() as $invoice) {
@@ -206,6 +219,11 @@ class OrderService
             ) {
                 $paidAt = $invoice->getCreatedAt();
             }
+        }
+
+        $authorized = 0.0;
+        if ($paid <= 0.009 && $state !== Order::STATE_CANCELED && $grandTotal > 0.009) {
+            $authorized = $this->authorizedAmount($order, $payment ? (float) ($payment->getAmountAuthorized() ?? 0) : 0.0);
         }
 
         if ($state === Order::STATE_CANCELED) {
@@ -222,13 +240,14 @@ class OrderService
             $status = 'partially_paid';
         } elseif ($state === Order::STATE_PAYMENT_REVIEW) {
             $status = 'payment_review';
+        } elseif ($authorized > 0) {
+            $status = 'authorized';
         } elseif ($state === Order::STATE_NEW || $state === Order::STATE_PENDING_PAYMENT) {
             $status = 'awaiting_payment';
         } else {
             $status = 'unpaid';
         }
 
-        $payment = $order->getPayment();
         $refundedOnline = $payment ? (float) ($payment->getBaseAmountRefundedOnline() ?? 0) : 0.0;
         $refundedBase = $payment ? (float) ($payment->getBaseAmountRefunded() ?? 0) : 0.0;
 
@@ -240,8 +259,38 @@ class OrderService
             'total_refunded' => $refunded,
             'refunded_online' => $refundedOnline,
             'refunded_offline' => max(0.0, round($refundedBase - $refundedOnline, 2)),
+            'amount_authorized' => $status === 'authorized' ? $authorized : null,
             'paid_at' => $paidAt,
         ];
+    }
+
+    /**
+     * Amount the payment provider has approved but not yet captured, or 0.0
+     * when no open authorization exists. Trusts `amount_authorized` when the
+     * provider filled it; otherwise looks for an authorization transaction
+     * and, as Magento authorises the order total, reports the order's due.
+     */
+    private function authorizedAmount(OrderInterface $order, float $recorded): float
+    {
+        if ($recorded > 0.009) {
+            return $recorded;
+        }
+
+        $criteria = $this->searchCriteriaBuilder
+            ->addFilter(TransactionInterface::ORDER_ID, (int) $order->getEntityId())
+            ->addFilter(TransactionInterface::TXN_TYPE, TransactionInterface::TYPE_AUTH)
+            ->setPageSize(1)
+            ->create();
+
+        try {
+            if ($this->transactionRepository->getList($criteria)->getTotalCount() > 0) {
+                return (float) ($order->getTotalDue() ?? $order->getGrandTotal());
+            }
+        } catch (\Throwable) {
+            // A failing transaction lookup must not take the order lookup down with it.
+        }
+
+        return 0.0;
     }
 
     /**
