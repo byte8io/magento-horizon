@@ -40,6 +40,10 @@ class Router implements RouterInterface
         'horizon/api/v1/admin/customer' => Controller\Api\Admin\CustomerSave::class,
         'horizon/api/v1/admin/customer/address' => Controller\Api\Admin\CustomerAddressSave::class,
         'horizon/api/v1/admin/customer/newsletter' => Controller\Api\Admin\CustomerNewsletter::class,
+        'horizon/api/v1/diagnostics/sources' => Controller\Api\Diagnostics\Sources::class,
+        'horizon/api/v1/diagnostics/snapshot' => Controller\Api\Diagnostics\Snapshot::class,
+        'horizon/api/v1/diagnostics/explain' => Controller\Api\Diagnostics\Explain::class,
+        'horizon/api/v1/diagnostics/knowledge' => Controller\Api\Diagnostics\Knowledge::class,
     ];
 
     public function __construct(

@@ -18,6 +18,7 @@ class Config
     private const XML_PATH_API_KEY = 'byte8_horizon/general/api_key';
     private const XML_PATH_WRITE_API_KEY = 'byte8_horizon/general/write_api_key';
     private const XML_PATH_WRITE_SCOPES = 'byte8_horizon/general/write_scopes';
+    private const XML_PATH_DIAGNOSTICS_API_KEY = 'byte8_horizon/general/diagnostics_api_key';
     private const XML_PATH_WRITE_PRODUCT_ATTRIBUTES = 'byte8_horizon/writes/product_attributes';
     private const XML_PATH_WRITE_MAX_PRICE_CHANGE = 'byte8_horizon/writes/max_price_change_pct';
     private const XML_PATH_WRITE_MAX_BULK_PRODUCTS = 'byte8_horizon/writes/max_bulk_products';
@@ -235,6 +236,21 @@ class Config
             return [];
         }
         return array_values(array_filter(array_map('trim', explode(',', $value))));
+    }
+
+    /**
+     * The diagnostics key issued by the Horizon dashboard (Support
+     * diagnostics); null when the store exposes no integration diagnostics.
+     * Accepted only by `/horizon/api/v1/diagnostics/*`.
+     */
+    public function getDiagnosticsApiKey(): ?string
+    {
+        $value = $this->scopeConfig->getValue(self::XML_PATH_DIAGNOSTICS_API_KEY);
+        if ($value) {
+            $decrypted = trim((string) $this->encryptor->decrypt($value));
+            return $decrypted !== '' ? $decrypted : null;
+        }
+        return null;
     }
 
     /**

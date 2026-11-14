@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Byte8\Horizon\Controller\Api;
 
 use Byte8\Horizon\Model\Config;
+use Byte8\Horizon\Model\Diagnostics\SourcePool;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\App\ProductMetadataInterface;
@@ -41,7 +42,8 @@ class Health extends AbstractAction
         private readonly ModuleListInterface $moduleList,
         private readonly PackageInfo $packageInfo,
         private readonly ScopeConfigInterface $scopeConfig,
-        private readonly Filesystem $filesystem
+        private readonly Filesystem $filesystem,
+        private readonly SourcePool $diagnosticsSources
     ) {
         parent::__construct($request, $jsonFactory, $config);
     }
@@ -66,6 +68,12 @@ class Health extends AbstractAction
                     'capture_online' => $this->config->isOnlineCaptureAllowed(),
                     'customer_attributes' => $this->config->getWritableCustomerAttributes(),
                 ],
+            ],
+            // Phase 10: integration diagnostics. Tells the dashboard whether the
+            // diagnostics key is in place and which integrations report through it.
+            'diagnostics' => [
+                'configured' => $this->config->getDiagnosticsApiKey() !== null,
+                'sources' => $this->diagnosticsSources->describe(),
             ],
         ]);
     }

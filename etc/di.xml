@@ -20,6 +20,16 @@
         </arguments>
     </type>
 
+    <!-- Integration diagnostics served to support agents through the diagnostics
+         key (Phase 10). Horizon ships no source of its own: an integration module
+         implements Api\Diagnostics\SourceInterface and adds an <item> here from its
+         own di.xml, e.g. byte8/module-plenty-horizon for the PlentyONE connector. -->
+    <type name="Byte8\Horizon\Model\Diagnostics\SourcePool">
+        <arguments>
+            <argument name="sources" xsi:type="array"/>
+        </arguments>
+    </type>
+
     <!-- CLI commands -->
     <type name="Magento\Framework\Console\CommandListInterface">
         <arguments>
