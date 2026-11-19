@@ -162,7 +162,7 @@ class ProductIndexer
         $table = $this->resourceConnection->getTableName(self::TABLE);
         $count = 0;
 
-        $this->emulation->startEnvironmentEmulation($storeId, Area::AREA_FRONTEND, true);
+        $leaveStore = $this->enterStore($storeId);
         try {
             $collection = $this->productCollectionFactory->create();
             $collection->setStoreId($storeId);
@@ -200,10 +200,39 @@ class ProductIndexer
                 $connection->insertMultiple($table, $batch);
             }
         } finally {
-            $this->emulation->stopEnvironmentEmulation();
+            $leaveStore();
         }
 
         return $count;
+    }
+
+    /**
+     * Switch to a store view and return the callable that switches back.
+     *
+     * Full emulation also loads the view's theme translations, which cannot be
+     * resolved while `setup:upgrade` runs (a reindex triggered from a module's
+     * recurring setup script fails with "Required parameter 'theme_dir' was not
+     * passed"). In that case only the current store is switched, which is what
+     * the row data depends on.
+     */
+    private function enterStore(int $storeId): callable
+    {
+        try {
+            $this->emulation->startEnvironmentEmulation($storeId, Area::AREA_FRONTEND, true);
+
+            return function (): void {
+                $this->emulation->stopEnvironmentEmulation();
+            };
+        } catch (\Throwable $e) {
+            $this->emulation->stopEnvironmentEmulation();
+        }
+
+        $previous = (int) $this->storeManager->getStore()->getId();
+        $this->storeManager->setCurrentStore($storeId);
+
+        return function () use ($previous): void {
+            $this->storeManager->setCurrentStore($previous);
+        };
     }
 
     /**
