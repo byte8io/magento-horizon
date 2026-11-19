@@ -2,135 +2,135 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system.xsd">
     <system>
-        <section id="byte8_horizon" translate="label" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+        <section id="byte8_horizon" translate="label" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
             <label>Horizon AI Gateway</label>
             <tab>byte8</tab>
             <resource>Byte8_Horizon::config</resource>
-            <group id="general" translate="label" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+            <group id="general" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>General Settings</label>
-                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Enable Horizon API</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     <comment>Enable or disable the /horizon/api/v1/* endpoints</comment>
                 </field>
-                <field id="api_key" translate="label comment" type="obscure" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="api_key" translate="label comment" type="obscure" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>API Key</label>
                     <comment><![CDATA[Paste the key issued when you add this store at <a href="https://horizon.byte8.io" target="_blank">horizon.byte8.io</a> (shown once; rotate it from the dashboard if lost). Stored encrypted and shown masked; leave the mask untouched to keep the current key. Requests must include header: <code>X-Horizon-Key: your-api-key</code>]]></comment>
                     <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                 </field>
-                <field id="gateway_url" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="gateway_url" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Gateway URL</label>
                     <comment><![CDATA[Base URL of the Byte8 Horizon gateway. Defaults to <code>https://horizon.byte8.io</code>; include the scheme. Used for catalog invalidation webhooks and the AI assistant bootstrap. Point it at a local gateway (e.g. <code>http://host.docker.internal:8085</code>) for development, or clear it to disable outbound webhooks.]]></comment>
                 </field>
-                <field id="write_api_key" translate="label comment" type="obscure" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="write_api_key" translate="label comment" type="obscure" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Write Key</label>
                     <comment><![CDATA[Optional. Issued under <strong>Agent write access</strong> on the store's page in the Horizon dashboard (shown once). Only this key can call the <code>/horizon/api/v1/admin/*</code> endpoints that change the store; the API Key above stays read-only even if it leaks. Leave empty to keep the store read-only.]]></comment>
                     <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                 </field>
-                <field id="write_scopes" translate="label comment" type="multiselect" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                <field id="write_scopes" translate="label comment" type="multiselect" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Write Scopes</label>
                     <source_model>Byte8\Horizon\Model\Config\Source\WriteScope</source_model>
                     <can_be_empty>1</can_be_empty>
                     <comment><![CDATA[What the write key may change. Enforced here, in the extension, on every write; the dashboard's own scope list only decides which tools agents see. Every write supports a dry run and is recorded in the dashboard's Changes list.]]></comment>
                 </field>
-                <field id="diagnostics_api_key" translate="label comment" type="obscure" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="diagnostics_api_key" translate="label comment" type="obscure" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Diagnostics Key</label>
                     <comment><![CDATA[Optional. Issued under <strong>Support diagnostics</strong> on the store's page in the Horizon dashboard (shown once). Only this key can call <code>/horizon/api/v1/diagnostics/*</code>, which serves redacted diagnostics of installed integrations (for example the Byte8 PlentyONE connector) to support agents; it opens nothing else, and the API Key and Write Key cannot read diagnostics. Leave empty when no integration reports diagnostics.]]></comment>
                     <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                 </field>
             </group>
-            <group id="writes" translate="label" sortOrder="15" showInDefault="1" showInWebsite="0" showInStore="0">
+            <group id="writes" translate="label" sortOrder="15" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Agent Writes</label>
                 <comment><![CDATA[Limits for the <code>catalog:write</code>, <code>sales:write</code> and <code>customers:write</code> scopes. Every write is previewed as a change set before it is applied and listed under Changes in the Horizon dashboard.]]></comment>
-                <field id="product_attributes" translate="label comment" type="textarea" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                <field id="product_attributes" translate="label comment" type="textarea" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Writable Product Attributes</label>
                     <comment><![CDATA[Attribute codes an agent may set under <code>attributes</code> (one per line or comma separated), e.g. <code>color, size, manufacturer, country_of_manufacture</code>. Name, descriptions, price, special price and dates, weight, URL key, meta fields, status, visibility, websites, categories and stock are always writable. Empty = no extra attributes.]]></comment>
                 </field>
-                <field id="max_price_change_pct" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                <field id="max_price_change_pct" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Max Price Change (%)</label>
                     <validate>validate-zero-or-greater validate-digits</validate>
                     <comment>Refuse a price or special-price change that moves the current value by more than this percentage in one write. Default 50; 0 disables the cap.</comment>
                 </field>
-                <field id="max_bulk_products" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                <field id="max_bulk_products" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Max Products Per Bulk Write</label>
                     <validate>validate-greater-than-zero validate-digits</validate>
                     <comment>Most SKUs one bulk update may touch. Default 50.</comment>
                 </field>
-                <field id="ship_unpaid" translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                <field id="ship_unpaid" translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Allow Shipping Unpaid Orders</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     <comment>sales:write — may an agent create a shipment for an order that still has an amount due (e.g. pay on invoice)? Default No: the agent must invoice first or the write is refused.</comment>
                 </field>
-                <field id="capture_online" translate="label comment" type="select" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                <field id="capture_online" translate="label comment" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Allow Online Capture</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     <comment>sales:write — may an agent-created invoice capture the payment through the payment provider when the method supports it? Default Yes. No = agents may only record offline captures (money already taken or taken elsewhere).</comment>
                 </field>
-                <field id="customer_attributes" translate="label comment" type="textarea" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                <field id="customer_attributes" translate="label comment" type="textarea" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Writable Customer Attributes</label>
                     <comment><![CDATA[customers:write — custom customer attribute codes an agent may set under <code>attributes</code> (one per line or comma separated). Names, group, date of birth, gender, tax/VAT id and addresses are always writable; email, password and account deletion never are. Empty = no custom attributes.]]></comment>
                 </field>
             </group>
-            <group id="assistant" translate="label" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+            <group id="assistant" translate="label" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>AI Shopping Assistant</label>
-                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Enabled</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     <comment>Widget configuration (publishable key, name, color) is fetched automatically from the Horizon gateway using your API key. Enable the assistant for this store in your Horizon dashboard first.</comment>
                 </field>
-                <field id="knowledge_pages" translate="label comment" type="multiselect" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                <field id="knowledge_pages" translate="label comment" type="multiselect" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Knowledge Pages</label>
                     <source_model>Byte8\Horizon\Model\Config\Source\CmsPage</source_model>
                     <can_be_empty>1</can_be_empty>
                     <comment><![CDATA[CMS pages the assistant may quote when shoppers ask about delivery times, returns, refunds, payment or how to contact you. Leave empty to auto-detect pages whose title or URL key mentions shipping, delivery, returns, FAQ, customer service, contact, terms or payment. A selected page may be <strong>disabled</strong> in Magento: it is then assistant-only knowledge — read by the assistant, never linked, invisible on the storefront. Page content is served as plain text via <code>/horizon/api/v1/store-info</code>; up to 12,000 characters per selected page (6,000 per auto-detected page), 24,000 in total — spent on assistant-only pages first, then shipping / payment / returns / FAQ / contact pages, then the rest. Select only pages that answer shopper questions; terms, privacy and marketing pages crowd out the FAQ.]]></comment>
                 </field>
-                <field id="gate_cookie" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                <field id="gate_cookie" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Load After Cookie</label>
                     <comment><![CDATA[Name of a cookie that must exist before the chat widget appears, e.g. the cookie your age-verification or consent gate sets (<code>age-confirmation</code>). The page is re-checked every 1.5 seconds until the cookie appears, so no theme changes are needed. Leave empty to show the widget on every page immediately.]]></comment>
                 </field>
-                <field id="gate_cookie_value" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                <field id="gate_cookie_value" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Required Cookie Value</label>
                     <comment><![CDATA[Only load when the cookie above has exactly this value, e.g. <code>true</code>. Leave empty to accept any non-empty value.]]></comment>
                 </field>
-                <field id="gate_event" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                <field id="gate_event" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Gate Passed Event</label>
                     <comment><![CDATA[Optional: name of a browser event your gate dispatches on <code>window</code> when the visitor passes (e.g. <code>ageVerificationCompleted</code>). The widget then loads instantly instead of at the next cookie check.]]></comment>
                 </field>
-                <field id="position" translate="label comment" type="select" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                <field id="position" translate="label comment" type="select" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Widget Position</label>
                     <source_model>Byte8\Horizon\Model\Config\Source\WidgetPosition</source_model>
                     <comment>Corner of the page the chat button sits in. The chat panel opens above it.</comment>
                 </field>
-                <field id="offset_bottom" translate="label comment" type="text" sortOrder="70" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                <field id="offset_bottom" translate="label comment" type="text" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Bottom Offset (px)</label>
                     <validate>validate-digits validate-digits-range digits-range-0-400</validate>
                     <comment>Distance between the chat button and the bottom edge of the page (default 24). Raise it when the button overlaps your theme's back-to-top or cookie button.</comment>
                 </field>
-                <field id="offset_side" translate="label comment" type="text" sortOrder="80" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                <field id="offset_side" translate="label comment" type="text" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Side Offset (px)</label>
                     <validate>validate-digits validate-digits-range digits-range-0-400</validate>
                     <comment>Distance between the chat button and the left or right edge of the page (default 24).</comment>
                 </field>
             </group>
-            <group id="delivery" translate="label comment" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+            <group id="delivery" translate="label comment" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Delivery Estimates</label>
                 <comment>Lets the assistant tell shoppers roughly when an order will arrive. Dates are computed by the module in the store timezone; the AI only reads them, or only the day counts if you prefer.</comment>
-                <field id="handling_days" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="handling_days" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Handling Time (days)</label>
                     <validate>validate-digits</validate>
                     <comment>Days between an order being placed and being dispatched. Used for orders that haven't shipped yet and for quotes to new shoppers.</comment>
                 </field>
-                <field id="business_days" translate="label comment" type="select" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="business_days" translate="label comment" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Delivery Days</label>
                     <source_model>Byte8\Horizon\Model\Config\Source\DeliveryDays</source_model>
                     <comment>Which days count when adding handling and transit days. Pick Monday to Saturday when your carrier delivers on Saturdays (DHL, Royal Mail, UPS Saturday), so a Thursday dispatch with 1-2 days does not jump to Monday.</comment>
                 </field>
-                <field id="estimate_format" translate="label comment" type="select" sortOrder="25" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="estimate_format" translate="label comment" type="select" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Tell Shoppers</label>
                     <source_model>Byte8\Horizon\Model\Config\Source\EstimateFormat</source_model>
                     <comment>Arrival dates: "between 16 and 17 November". Number of days only: "1 to 2 business days after dispatch" - the dates are still computed to spot late orders, but never shown.</comment>
                 </field>
-                <field id="transit_windows" translate="label comment" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="transit_windows" translate="label comment" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Transit Times</label>
                     <frontend_model>Byte8\Horizon\Block\Adminhtml\Form\Field\TransitWindows</frontend_model>
                     <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>

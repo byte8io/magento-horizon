@@ -37,7 +37,7 @@ class SourceItemsSavePlugin
         $result,
         array $sourceItems
     ) {
-        if (!$this->config->isEnabled() || empty($sourceItems)) {
+        if (!$this->config->isEnabledInAnyStore() || empty($sourceItems)) {
             return $result;
         }
 

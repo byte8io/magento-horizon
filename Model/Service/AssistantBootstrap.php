@@ -8,6 +8,7 @@ use Byte8\Horizon\Model\Config;
 use Magento\Framework\App\CacheInterface;
 use Magento\Framework\HTTP\Client\Curl;
 use Magento\Framework\Serialize\Serializer\Json;
+use Magento\Store\Model\StoreManagerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -34,7 +35,8 @@ class AssistantBootstrap
         private readonly Curl $curl,
         private readonly CacheInterface $cache,
         private readonly Json $json,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly StoreManagerInterface $storeManager
     ) {
     }
 
@@ -56,7 +58,9 @@ class AssistantBootstrap
             return null;
         }
 
-        $cached = $this->cache->load(self::CACHE_KEY);
+        // Each store view may connect to its own Horizon store
+        $cacheKey = self::CACHE_KEY . '_' . (int) $this->storeManager->getStore()->getId();
+        $cached = $this->cache->load($cacheKey);
         if ($cached !== false) {
             return $this->normalize($this->decode($cached));
         }
@@ -66,7 +70,7 @@ class AssistantBootstrap
             $bootstrap = ['enabled' => false];
         }
 
-        $this->cache->save($this->json->serialize($bootstrap), self::CACHE_KEY, [], self::CACHE_LIFETIME_SECONDS);
+        $this->cache->save($this->json->serialize($bootstrap), $cacheKey, [], self::CACHE_LIFETIME_SECONDS);
 
         return $this->normalize($bootstrap);
     }

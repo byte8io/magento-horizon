@@ -7,6 +7,7 @@ namespace Byte8\Horizon\Model\Catalog;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ResourceModel\Product as ProductResource;
 use Magento\Eav\Model\Entity\Attribute\AbstractAttribute;
+use Magento\Store\Model\StoreManagerInterface;
 
 /**
  * Resolves the human-readable values of a product's filterable attributes
@@ -28,8 +29,31 @@ class AttributeTextResolver
     private array $attributeCache = [];
 
     public function __construct(
-        private readonly ProductResource $productResource
+        private readonly ProductResource $productResource,
+        private readonly StoreManagerInterface $storeManager
     ) {
+    }
+
+    /**
+     * Attribute label in the current store view. Attribute models are shared
+     * for the whole process and keep the label of the view they were first
+     * loaded in, so the per-view labels are read directly.
+     */
+    public function storeLabel(string $code): string
+    {
+        $attribute = $this->productResource->getAttribute($code);
+        if (!$attribute instanceof AbstractAttribute || !$attribute->getId()) {
+            return '';
+        }
+        try {
+            $labels = (array) $attribute->getStoreLabels();
+            $storeId = (int) $this->storeManager->getStore()->getId();
+        } catch (\Throwable) {
+            return (string) $attribute->getDefaultFrontendLabel();
+        }
+        $label = trim((string) ($labels[$storeId] ?? ''));
+
+        return $label !== '' ? $label : (string) $attribute->getDefaultFrontendLabel();
     }
 
     /**
@@ -67,7 +91,7 @@ class AttributeTextResolver
                 continue;
             }
 
-            $label = (string) $attribute->getStoreLabel();
+            $label = $this->storeLabel($code);
             $result[] = [
                 'code' => $code,
                 'label' => $label !== '' ? $label : $code,

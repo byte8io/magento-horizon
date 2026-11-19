@@ -50,6 +50,9 @@ class ProductService
     ): array {
         $collection = $this->collectionFactory->create();
 
+        // The index holds one set of rows per store view
+        $collection->addFieldToFilter('store_id', (int) $this->storeManager->getStore()->getId());
+
         // Only enabled, visible products
         $collection->addFieldToFilter('status', 1);
         $collection->addFieldToFilter('visibility', ['in' => [2, 3, 4]]);

@@ -11,6 +11,7 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Store\Model\ScopeInterface;
+use Magento\Store\Model\StoreManagerInterface;
 
 class Config
 {
@@ -43,11 +44,61 @@ class Config
     private const XML_PATH_DELIVERY_ESTIMATE_FORMAT = 'byte8_horizon/delivery/estimate_format';
     private const XML_PATH_DELIVERY_TRANSIT_WINDOWS = 'byte8_horizon/delivery/transit_windows';
 
+    /** @var int[]|null */
+    private ?array $enabledStoreIds = null;
+
     public function __construct(
         private readonly ScopeConfigInterface $scopeConfig,
         private readonly EncryptorInterface $encryptor,
-        private readonly Json $json
+        private readonly Json $json,
+        private readonly StoreManagerInterface $storeManager
     ) {
+    }
+
+    /**
+     * Every setting is read at store view scope, so each view can connect to
+     * its own Horizon store. Null means the current store view (the admin
+     * scope, and therefore the default values, in the backend and on the CLI).
+     *
+     * @return mixed
+     */
+    private function value(string $path, ?int $storeId = null)
+    {
+        return $this->scopeConfig->getValue($path, ScopeInterface::SCOPE_STORE, $storeId);
+    }
+
+    private function flag(string $path, ?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag($path, ScopeInterface::SCOPE_STORE, $storeId);
+    }
+
+    /**
+     * Store views Horizon serves: active views where the module is enabled.
+     * The product index holds one set of rows per view listed here.
+     *
+     * @return int[]
+     */
+    public function getEnabledStoreIds(): array
+    {
+        if ($this->enabledStoreIds === null) {
+            $this->enabledStoreIds = [];
+            foreach ($this->storeManager->getStores() as $store) {
+                if ($store->getIsActive() && $this->isEnabled((int) $store->getId())) {
+                    $this->enabledStoreIds[] = (int) $store->getId();
+                }
+            }
+        }
+        return $this->enabledStoreIds;
+    }
+
+    /**
+     * For code that runs outside a storefront request (observers in the
+     * admin, cron, CLI), where "enabled" at the current scope says nothing
+     * about a view that was switched on by itself.
+     */
+    public function isEnabledInAnyStore(): bool
+    {
+        return $this->isEnabled() || $this->getEnabledStoreIds() !== [];
     }
 
     /**
@@ -55,7 +106,7 @@ class Config
      */
     public function getDeliveryHandlingDays(): int
     {
-        return max(0, (int) $this->scopeConfig->getValue(self::XML_PATH_DELIVERY_HANDLING_DAYS));
+        return max(0, (int) $this->value(self::XML_PATH_DELIVERY_HANDLING_DAYS));
     }
 
     /**
@@ -64,7 +115,7 @@ class Config
      */
     public function getDeliveryDays(): string
     {
-        return DeliveryDays::normalize($this->scopeConfig->getValue(self::XML_PATH_DELIVERY_BUSINESS_DAYS));
+        return DeliveryDays::normalize($this->value(self::XML_PATH_DELIVERY_BUSINESS_DAYS));
     }
 
     /**
@@ -81,7 +132,7 @@ class Config
      */
     public function getDeliveryEstimateFormat(): string
     {
-        $value = (string) $this->scopeConfig->getValue(self::XML_PATH_DELIVERY_ESTIMATE_FORMAT);
+        $value = (string) $this->value(self::XML_PATH_DELIVERY_ESTIMATE_FORMAT);
         return $value === EstimateFormat::DAYS ? EstimateFormat::DAYS : EstimateFormat::DATES;
     }
 
@@ -97,7 +148,7 @@ class Config
      */
     public function getTransitWindows(): array
     {
-        $raw = $this->scopeConfig->getValue(self::XML_PATH_DELIVERY_TRANSIT_WINDOWS);
+        $raw = $this->value(self::XML_PATH_DELIVERY_TRANSIT_WINDOWS);
         if (empty($raw)) {
             return [];
         }
@@ -112,14 +163,14 @@ class Config
         return is_array($decoded) ? array_values(array_filter($decoded, 'is_array')) : [];
     }
 
-    public function isEnabled(): bool
+    public function isEnabled(?int $storeId = null): bool
     {
-        return $this->scopeConfig->isSetFlag(self::XML_PATH_ENABLED);
+        return $this->flag(self::XML_PATH_ENABLED, $storeId);
     }
 
     public function isAssistantEnabled(): bool
     {
-        return $this->scopeConfig->isSetFlag(self::XML_PATH_ASSISTANT_ENABLED);
+        return $this->flag(self::XML_PATH_ASSISTANT_ENABLED);
     }
 
     /**
@@ -128,7 +179,7 @@ class Config
      */
     public function getAssistantGateCookie(): string
     {
-        return trim((string) $this->scopeConfig->getValue(self::XML_PATH_ASSISTANT_GATE_COOKIE));
+        return trim((string) $this->value(self::XML_PATH_ASSISTANT_GATE_COOKIE));
     }
 
     /**
@@ -136,7 +187,7 @@ class Config
      */
     public function getAssistantGateCookieValue(): string
     {
-        return trim((string) $this->scopeConfig->getValue(self::XML_PATH_ASSISTANT_GATE_COOKIE_VALUE));
+        return trim((string) $this->value(self::XML_PATH_ASSISTANT_GATE_COOKIE_VALUE));
     }
 
     /**
@@ -145,7 +196,7 @@ class Config
      */
     public function getAssistantGateEvent(): string
     {
-        return trim((string) $this->scopeConfig->getValue(self::XML_PATH_ASSISTANT_GATE_EVENT));
+        return trim((string) $this->value(self::XML_PATH_ASSISTANT_GATE_EVENT));
     }
 
     /**
@@ -154,7 +205,7 @@ class Config
      */
     public function getAssistantPosition(): string
     {
-        $value = (string) $this->scopeConfig->getValue(self::XML_PATH_ASSISTANT_POSITION);
+        $value = (string) $this->value(self::XML_PATH_ASSISTANT_POSITION);
 
         return $value === WidgetPosition::BOTTOM_LEFT ? WidgetPosition::BOTTOM_LEFT : WidgetPosition::BOTTOM_RIGHT;
     }
@@ -165,7 +216,7 @@ class Config
      */
     public function getAssistantOffsetBottom(): int
     {
-        return $this->offset($this->scopeConfig->getValue(self::XML_PATH_ASSISTANT_OFFSET_BOTTOM));
+        return $this->offset($this->value(self::XML_PATH_ASSISTANT_OFFSET_BOTTOM));
     }
 
     /**
@@ -173,7 +224,7 @@ class Config
      */
     public function getAssistantOffsetSide(): int
     {
-        return $this->offset($this->scopeConfig->getValue(self::XML_PATH_ASSISTANT_OFFSET_SIDE));
+        return $this->offset($this->value(self::XML_PATH_ASSISTANT_OFFSET_SIDE));
     }
 
     /**
@@ -196,16 +247,16 @@ class Config
      */
     public function getKnowledgePageIdentifiers(): array
     {
-        $value = (string) $this->scopeConfig->getValue(self::XML_PATH_KNOWLEDGE_PAGES);
+        $value = (string) $this->value(self::XML_PATH_KNOWLEDGE_PAGES);
         if ($value === '') {
             return [];
         }
         return array_values(array_filter(array_map('trim', explode(',', $value))));
     }
 
-    public function getApiKey(): ?string
+    public function getApiKey(?int $storeId = null): ?string
     {
-        $value = $this->scopeConfig->getValue(self::XML_PATH_API_KEY);
+        $value = $this->value(self::XML_PATH_API_KEY, $storeId);
         if ($value) {
             return $this->encryptor->decrypt($value);
         }
@@ -218,7 +269,7 @@ class Config
      */
     public function getWriteApiKey(): ?string
     {
-        $value = $this->scopeConfig->getValue(self::XML_PATH_WRITE_API_KEY);
+        $value = $this->value(self::XML_PATH_WRITE_API_KEY);
         if ($value) {
             $decrypted = trim((string) $this->encryptor->decrypt($value));
             return $decrypted !== '' ? $decrypted : null;
@@ -231,7 +282,7 @@ class Config
      */
     public function getWriteScopes(): array
     {
-        $value = (string) $this->scopeConfig->getValue(self::XML_PATH_WRITE_SCOPES);
+        $value = (string) $this->value(self::XML_PATH_WRITE_SCOPES);
         if ($value === '') {
             return [];
         }
@@ -245,7 +296,7 @@ class Config
      */
     public function getDiagnosticsApiKey(): ?string
     {
-        $value = $this->scopeConfig->getValue(self::XML_PATH_DIAGNOSTICS_API_KEY);
+        $value = $this->value(self::XML_PATH_DIAGNOSTICS_API_KEY);
         if ($value) {
             $decrypted = trim((string) $this->encryptor->decrypt($value));
             return $decrypted !== '' ? $decrypted : null;
@@ -261,7 +312,7 @@ class Config
      */
     public function getWritableProductAttributes(): array
     {
-        $value = (string) $this->scopeConfig->getValue(self::XML_PATH_WRITE_PRODUCT_ATTRIBUTES);
+        $value = (string) $this->value(self::XML_PATH_WRITE_PRODUCT_ATTRIBUTES);
         $codes = preg_split('/[\s,]+/', $value) ?: [];
         return array_values(array_unique(array_filter(array_map('trim', $codes))));
     }
@@ -269,21 +320,21 @@ class Config
     /** Largest price or special-price move per write, in percent; 0 = no cap. */
     public function getMaxPriceChangePercent(): int
     {
-        $value = $this->scopeConfig->getValue(self::XML_PATH_WRITE_MAX_PRICE_CHANGE);
+        $value = $this->value(self::XML_PATH_WRITE_MAX_PRICE_CHANGE);
         return $value === null || $value === '' ? 50 : max(0, (int) $value);
     }
 
     /** Most SKUs one bulk product write may touch. */
     public function getMaxBulkProducts(): int
     {
-        $value = $this->scopeConfig->getValue(self::XML_PATH_WRITE_MAX_BULK_PRODUCTS);
+        $value = $this->value(self::XML_PATH_WRITE_MAX_BULK_PRODUCTS);
         return $value === null || $value === '' ? 50 : max(1, (int) $value);
     }
 
     /** May an agent ship an order that still has an amount due? Default no. */
     public function isShipUnpaidAllowed(): bool
     {
-        return $this->scopeConfig->isSetFlag(self::XML_PATH_WRITE_SHIP_UNPAID);
+        return $this->flag(self::XML_PATH_WRITE_SHIP_UNPAID);
     }
 
     /**
@@ -293,7 +344,7 @@ class Config
      */
     public function isOnlineCaptureAllowed(): bool
     {
-        $value = $this->scopeConfig->getValue(self::XML_PATH_WRITE_CAPTURE_ONLINE);
+        $value = $this->value(self::XML_PATH_WRITE_CAPTURE_ONLINE);
         return $value === null || $value === '' || (bool) $value;
     }
 
@@ -305,7 +356,7 @@ class Config
      */
     public function getWritableCustomerAttributes(): array
     {
-        $value = (string) $this->scopeConfig->getValue(self::XML_PATH_WRITE_CUSTOMER_ATTRIBUTES);
+        $value = (string) $this->value(self::XML_PATH_WRITE_CUSTOMER_ATTRIBUTES);
         $codes = preg_split('/[\s,]+/', $value) ?: [];
         return array_values(array_unique(array_filter(array_map('trim', $codes))));
     }
@@ -320,9 +371,9 @@ class Config
         return (string) $this->scopeConfig->getValue(self::XML_PATH_CATEGORY_URL_SUFFIX, ScopeInterface::SCOPE_STORE);
     }
 
-    public function getGatewayUrl(): ?string
+    public function getGatewayUrl(?int $storeId = null): ?string
     {
-        $value = $this->scopeConfig->getValue(self::XML_PATH_GATEWAY_URL);
+        $value = $this->value(self::XML_PATH_GATEWAY_URL, $storeId);
         if (!$value) {
             return null;
         }

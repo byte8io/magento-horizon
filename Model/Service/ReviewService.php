@@ -6,6 +6,7 @@ namespace Byte8\Horizon\Model\Service;
 
 use Byte8\Horizon\Model\Review\SummaryProvider;
 use Magento\Framework\App\ResourceConnection;
+use Magento\Store\Model\StoreManagerInterface;
 
 /**
  * Approved reviews for one product, newest first, with the aggregate summary.
@@ -20,7 +21,8 @@ class ReviewService
 
     public function __construct(
         private readonly ResourceConnection $resourceConnection,
-        private readonly SummaryProvider $summaryProvider
+        private readonly SummaryProvider $summaryProvider,
+        private readonly StoreManagerInterface $storeManager
     ) {
     }
 
@@ -48,6 +50,7 @@ class ReviewService
             $connection->select()
                 ->from($this->resourceConnection->getTableName('byte8_horizon_product_index'), ['name'])
                 ->where('product_id = ?', $productId)
+                ->where('store_id = ?', (int) $this->storeManager->getStore()->getId())
         );
 
         $summary = $this->summaryProvider->forProductIds([$productId])[$productId] ?? ['avg' => null, 'count' => 0];

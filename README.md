@@ -68,6 +68,16 @@ bin/magento indexer:reindex byte8_horizon_product
 
 Then click **Test connection** in the Horizon dashboard — a green check means agents can reach your catalog. Full walkthrough: [docs.byte8.io/horizon/docs/getting-started/quick-start](https://docs.byte8.io/horizon/docs/getting-started/quick-start).
 
+### Multiple store views
+
+Every setting above can be set per website or store view, so each language or country view can be its own store in Horizon with its own assistant, FAQ and usage:
+
+1. Add the view as a store in the Horizon dashboard. Its Store URL is the view's own base URL, e.g. `https://example.com/de` (with *Add Store Code to URLs*) or `https://example.de`.
+2. In Magento, switch the configuration scope to that store view and paste the store's API key there.
+3. Run `bin/magento indexer:reindex byte8_horizon_product`.
+
+The product index holds one set of rows per store view with Horizon enabled, in that view's names, URLs, option labels and website prices. A view without its own key keeps using the key of the scope above it and answers as the same Horizon store. Set **Enabled** to *No* on a view to leave it out of the index and the API. Each connected view counts as one store against your plan.
+
 ## How it fits together
 
 ```

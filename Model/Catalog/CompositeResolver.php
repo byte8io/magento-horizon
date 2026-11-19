@@ -14,6 +14,11 @@ use Magento\Catalog\Model\Product;
  */
 class CompositeResolver
 {
+    public function __construct(
+        private readonly AttributeTextResolver $attributeTextResolver
+    ) {
+    }
+
     /**
      * @return array{price: float|null, special_price: float|null, options: array<int, array{code: string, label: string, values: string[]}>}
      */
@@ -58,9 +63,13 @@ class CompositeResolver
                 }
             }
             if ($values !== []) {
+                $code = (string) ($attribute['attribute_code'] ?? '');
+                $label = $code !== '' ? $this->attributeTextResolver->storeLabel($code) : '';
                 $options[] = [
-                    'code' => (string) ($attribute['attribute_code'] ?? ''),
-                    'label' => (string) ($attribute['store_label'] ?? $attribute['label'] ?? $attribute['attribute_code'] ?? ''),
+                    'code' => $code,
+                    'label' => $label !== ''
+                        ? $label
+                        : (string) ($attribute['store_label'] ?? $attribute['label'] ?? $code),
                     'values' => array_values(array_unique($values)),
                 ];
             }

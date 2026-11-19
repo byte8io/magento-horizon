@@ -13,7 +13,10 @@ use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCo
 use Byte8\Horizon\Model\Sales\SoldSummaryProvider;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
+use Byte8\Horizon\Model\Config;
+use Magento\Framework\App\Area;
 use Magento\Framework\App\ResourceConnection;
+use Magento\Store\Model\App\Emulation;
 use Magento\Store\Model\StoreManagerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -32,12 +35,15 @@ class ProductIndexer
         private readonly SoldSummaryProvider $soldSummary,
         private readonly CompositeResolver $compositeResolver,
         private readonly CategoryCollectionFactory $categoryCollectionFactory,
-        private readonly AttributeTextResolver $attributeTextResolver
+        private readonly AttributeTextResolver $attributeTextResolver,
+        private readonly Config $config,
+        private readonly Emulation $emulation
     ) {
     }
 
     /**
-     * Full reindex: truncate and rebuild the entire flat index.
+     * Full reindex: truncate and rebuild the entire flat index, one set of
+     * rows per store view Horizon serves.
      *
      * Normally invoked through the framework (`indexer:reindex byte8_horizon_product`
      * → {@see \Byte8\Horizon\Model\Indexer\Product\Action::executeFull()}).
@@ -49,38 +55,12 @@ class ProductIndexer
 
         $connection->truncateTable($table);
 
-        $collection = $this->productCollectionFactory->create();
-        $collection->addAttributeToSelect(array_merge([
-            'name', 'sku', 'short_description', 'description', 'price', 'special_price',
-            'url_key', 'image', 'visibility', 'status', 'type_id',
-        ], $this->attributeTextResolver->selectableCodes()));
-        $collection->addAttributeToFilter('status', \Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED);
-
-        $currency = $this->storeManager->getStore()->getBaseCurrencyCode();
         $ratings = $this->reviewSummary->forAllProducts();
         $sold = $this->soldSummary->forAllProducts();
-        $categoryNames = $this->categoryNames();
         $count = 0;
-        $batch = [];
 
-        foreach ($collection as $product) {
-            $batch[] = $this->buildRow(
-                $product,
-                $currency,
-                $ratings[(int) $product->getId()] ?? null,
-                $sold[(int) $product->getId()] ?? 0.0,
-                $categoryNames
-            );
-            $count++;
-
-            if (count($batch) >= self::BATCH_SIZE) {
-                $connection->insertMultiple($table, $batch);
-                $batch = [];
-            }
-        }
-
-        if (!empty($batch)) {
-            $connection->insertMultiple($table, $batch);
+        foreach ($this->storeIds() as $storeId) {
+            $count += $this->indexStore($storeId, null, $ratings, $sold);
         }
 
         $this->logger->info("Horizon: reindexed {$count} products");
@@ -126,8 +106,9 @@ class ProductIndexer
     }
 
     /**
-     * Partial reindex: update specific product IDs. Products that no longer
-     * exist or are disabled lose their row, so this doubles as the delete path.
+     * Partial reindex: update specific product IDs in every indexed store
+     * view. Products that no longer exist or are disabled lose their rows, so
+     * this doubles as the delete path.
      */
     public function reindexByIds(array $productIds): void
     {
@@ -141,33 +122,88 @@ class ProductIndexer
         // Delete existing rows for these products
         $connection->delete($table, ['product_id IN (?)' => $productIds]);
 
-        $collection = $this->productCollectionFactory->create();
-        $collection->addAttributeToSelect(array_merge([
-            'name', 'sku', 'short_description', 'description', 'price', 'special_price',
-            'url_key', 'image', 'visibility', 'status', 'type_id',
-        ], $this->attributeTextResolver->selectableCodes()));
-        $collection->addIdFilter($productIds);
-        $collection->addAttributeToFilter('status', \Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED);
-
-        $currency = $this->storeManager->getStore()->getBaseCurrencyCode();
         $ratings = $this->reviewSummary->forProductIds($productIds);
         $sold = $this->soldSummary->forProductIds($productIds);
-        $categoryNames = $this->categoryNames();
-        $rows = [];
 
-        foreach ($collection as $product) {
-            $rows[] = $this->buildRow(
-                $product,
-                $currency,
-                $ratings[(int) $product->getId()] ?? null,
-                $sold[(int) $product->getId()] ?? 0.0,
-                $categoryNames
-            );
+        foreach ($this->storeIds() as $storeId) {
+            $this->indexStore($storeId, $productIds, $ratings, $sold);
+        }
+    }
+
+    /**
+     * Store views to index: those with Horizon enabled, or the default view
+     * when it is not enabled anywhere yet (so the index can be built before
+     * the module is switched on).
+     *
+     * @return int[]
+     */
+    private function storeIds(): array
+    {
+        $storeIds = $this->config->getEnabledStoreIds();
+        if ($storeIds === []) {
+            $default = $this->storeManager->getDefaultStoreView();
+            $storeIds = $default ? [(int) $default->getId()] : [];
+        }
+        return $storeIds;
+    }
+
+    /**
+     * Build the rows of one store view. The view is emulated so names, URL
+     * keys, option labels, category names and website prices come out the way
+     * a shopper on that view sees them.
+     *
+     * @param int[]|null $productIds null = every product of the view's website
+     * @param array<int, array{avg: float|null, count: int}> $ratings
+     * @param array<int, float> $sold
+     */
+    private function indexStore(int $storeId, ?array $productIds, array $ratings, array $sold): int
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName(self::TABLE);
+        $count = 0;
+
+        $this->emulation->startEnvironmentEmulation($storeId, Area::AREA_FRONTEND, true);
+        try {
+            $collection = $this->productCollectionFactory->create();
+            $collection->setStoreId($storeId);
+            $collection->addStoreFilter($storeId);
+            $collection->addAttributeToSelect(array_merge([
+                'name', 'sku', 'short_description', 'description', 'price', 'special_price',
+                'url_key', 'image', 'visibility', 'status', 'type_id',
+            ], $this->attributeTextResolver->selectableCodes()));
+            if ($productIds !== null) {
+                $collection->addIdFilter($productIds);
+            }
+            $collection->addAttributeToFilter('status', \Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED);
+
+            $currency = $this->storeManager->getStore($storeId)->getBaseCurrencyCode();
+            $categoryNames = $this->categoryNames();
+            $batch = [];
+
+            foreach ($collection as $product) {
+                $batch[] = ['store_id' => $storeId] + $this->buildRow(
+                    $product,
+                    $currency,
+                    $ratings[(int) $product->getId()] ?? null,
+                    $sold[(int) $product->getId()] ?? 0.0,
+                    $categoryNames
+                );
+                $count++;
+
+                if (count($batch) >= self::BATCH_SIZE) {
+                    $connection->insertMultiple($table, $batch);
+                    $batch = [];
+                }
+            }
+
+            if (!empty($batch)) {
+                $connection->insertMultiple($table, $batch);
+            }
+        } finally {
+            $this->emulation->stopEnvironmentEmulation();
         }
 
-        if (!empty($rows)) {
-            $connection->insertMultiple($table, $rows);
-        }
+        return $count;
     }
 
     /**

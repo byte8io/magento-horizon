@@ -9,6 +9,8 @@
     -->
     <table name="byte8_horizon_product_index" resource="default" engine="innodb"
            comment="Horizon AI product index (flat, denormalized)">
+        <column xsi:type="smallint" name="store_id" unsigned="true" nullable="false" default="0"
+                comment="Store view the row was built for (names, URLs and prices are per view)"/>
         <column xsi:type="int" name="product_id" unsigned="true" nullable="false"
                 comment="Magento product entity_id"/>
         <column xsi:type="varchar" name="sku" nullable="false" length="64"
@@ -57,9 +59,11 @@
                 default="CURRENT_TIMESTAMP" comment="Last index update"/>
 
         <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="store_id"/>
             <column name="product_id"/>
         </constraint>
-        <constraint xsi:type="unique" referenceId="BYTE8_HORIZON_PROD_IDX_SKU">
+        <constraint xsi:type="unique" referenceId="BYTE8_HORIZON_PROD_IDX_STORE_SKU">
+            <column name="store_id"/>
             <column name="sku"/>
         </constraint>
 

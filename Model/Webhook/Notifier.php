@@ -45,14 +45,8 @@ class Notifier
      */
     public function notify(string $event, array $entityIds): void
     {
-        if (!$this->config->isEnabled()) {
-            return;
-        }
-
-        $gatewayUrl = $this->config->getGatewayUrl();
-        $apiKey = $this->config->getApiKey();
-
-        if (empty($gatewayUrl) || empty($apiKey)) {
+        $targets = $this->targets();
+        if ($targets === []) {
             return;
         }
 
@@ -62,13 +56,43 @@ class Notifier
             'timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
         ];
 
-        $url = $gatewayUrl . '/webhooks/invalidate';
+        foreach ($targets as [$gatewayUrl, $apiKey]) {
+            $this->send($gatewayUrl . '/webhooks/invalidate', $apiKey, $event, $payload);
+        }
+    }
 
+    /**
+     * One [gateway URL, API key] pair per connected Horizon store. Store views
+     * that share a key (the default-scope setup) are notified once.
+     *
+     * @return array<int, array{0: string, 1: string}>
+     */
+    private function targets(): array
+    {
+        $targets = [];
+        // null = the current scope, for a key set at default scope only
+        foreach (array_merge([null], $this->config->getEnabledStoreIds()) as $storeId) {
+            if (!$this->config->isEnabled($storeId)) {
+                continue;
+            }
+            $gatewayUrl = $this->config->getGatewayUrl($storeId);
+            $apiKey = $this->config->getApiKey($storeId);
+            if (!empty($gatewayUrl) && !empty($apiKey)) {
+                $targets[$gatewayUrl . '|' . $apiKey] = [$gatewayUrl, $apiKey];
+            }
+        }
+        return array_values($targets);
+    }
+
+    private function send(string $url, string $apiKey, string $event, array $payload): void
+    {
         try {
             $this->curl->setOption(CURLOPT_TIMEOUT, self::REQUEST_TIMEOUT_SECONDS);
             $this->curl->setOption(CURLOPT_CONNECTTIMEOUT, self::REQUEST_TIMEOUT_SECONDS);
-            $this->curl->addHeader('Content-Type', 'application/json');
-            $this->curl->addHeader('X-Horizon-Key', $apiKey);
+            $this->curl->setHeaders([
+                'Content-Type' => 'application/json',
+                'X-Horizon-Key' => $apiKey,
+            ]);
             $this->curl->post($url, json_encode($payload));
 
             $status = $this->curl->getStatus();

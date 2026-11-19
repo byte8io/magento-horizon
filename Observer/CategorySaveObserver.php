@@ -19,7 +19,7 @@ class CategorySaveObserver implements ObserverInterface
 
     public function execute(Observer $observer): void
     {
-        if (!$this->config->isEnabled()) {
+        if (!$this->config->isEnabledInAnyStore()) {
             return;
         }
 

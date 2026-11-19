@@ -1,6 +1,7 @@
 {
     "byte8_horizon_product_index": {
         "column": {
+            "store_id": true,
             "product_id": true,
             "sku": true,
             "name": true,
@@ -34,7 +35,8 @@
         },
         "constraint": {
             "PRIMARY": true,
-            "BYTE8_HORIZON_PRODUCT_INDEX_SKU": true
+            "BYTE8_HORIZON_PRODUCT_INDEX_SKU": true,
+            "BYTE8_HORIZON_PRODUCT_INDEX_STORE_ID_SKU": true
         }
     }
 }
