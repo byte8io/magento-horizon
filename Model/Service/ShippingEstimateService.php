@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Byte8\Horizon\Model\Service;
 
+use Byte8\Horizon\Model\Config\Source\EstimateFormat;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
@@ -46,7 +47,8 @@ class ShippingEstimateService
         private readonly PriceCurrencyInterface $priceCurrency,
         private readonly DeliveryWindowResolver $deliveryWindows,
         private readonly RuleRepositoryInterface $ruleRepository,
-        private readonly FreeShippingThresholdResolver $freeShippingThreshold
+        private readonly FreeShippingThresholdResolver $freeShippingThreshold,
+        private readonly HandlingTimeResolver $handlingTime
     ) {
     }
 
@@ -92,7 +94,11 @@ class ShippingEstimateService
             'free_shipping_from' => $this->freeShippingThreshold->resolve($storeId, $countryId)['amount'] ?? null,
             'free_shipping_reason' => null,
             'today' => $this->deliveryWindows->today(),
-            'handling_days' => $this->deliveryWindows->handlingDays(),
+            // The long end: what older gateways read as "the" handling time.
+            'handling_days' => $this->deliveryWindows->handlingDaysMax(),
+            'handling_min_days' => $this->deliveryWindows->handlingDays(),
+            'handling_max_days' => $this->deliveryWindows->handlingDaysMax(),
+            'extended_handling' => false,
             'delivery_days' => $this->deliveryWindows->deliveryDays(),
             'estimate_format' => $this->deliveryWindows->estimateFormat(),
         ];
@@ -153,6 +159,20 @@ class ShippingEstimateService
             $result['shipped_sku'] = $shippable->getSku();
         }
 
+        // A product with its own handling time (made to order, sent by a
+        // supplier) is quoted with it, and without dates if the merchant
+        // keeps those away from slow items.
+        $handling = $this->handlingTime->forLines([[
+            'product_id' => (int) $shippable->getId(),
+            'parent_product_id' => $shippable->getId() !== $product->getId() ? (int) $product->getId() : null,
+            'sku' => (string) $product->getSku(),
+        ]]);
+        $result['handling_days'] = $handling['max_days'];
+        $result['handling_min_days'] = $handling['min_days'];
+        $result['handling_max_days'] = $handling['max_days'];
+        $result['extended_handling'] = $handling['extended'];
+        $result['estimate_format'] = $this->deliveryWindows->estimateFormatFor($handling['extended']);
+
         $quote = $this->quoteFactory->create();
         $quote->setStore($store);
         $quote->setStoreId($storeId);
@@ -195,8 +215,13 @@ class ShippingEstimateService
                 (string) $rate->getCarrierTitle()
             );
             // Dates only when the merchant shows them; otherwise the day counts speak.
-            $estimated = $window !== null && $this->deliveryWindows->showsDates()
-                ? $this->deliveryWindows->project('now', $result['handling_days'], $window)
+            $estimated = $window !== null && $result['estimate_format'] === EstimateFormat::DATES
+                ? $this->deliveryWindows->project(
+                    'now',
+                    $result['handling_min_days'],
+                    $window,
+                    $result['handling_max_days']
+                )
                 : null;
             $result['methods'][] = [
                 'carrier_code' => (string) $rate->getCarrier(),

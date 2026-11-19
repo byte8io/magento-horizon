@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Byte8\Horizon\Model\Service;
 
+use Byte8\Horizon\Model\Config\Source\EstimateFormat;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Api\SortOrderBuilder;
 use Magento\Sales\Api\Data\OrderInterface;
@@ -21,7 +22,8 @@ class OrderService
         private readonly SearchCriteriaBuilder $searchCriteriaBuilder,
         private readonly SortOrderBuilder $sortOrderBuilder,
         private readonly DeliveryWindowResolver $deliveryWindows,
-        private readonly TransactionRepositoryInterface $transactionRepository
+        private readonly TransactionRepositoryInterface $transactionRepository,
+        private readonly HandlingTimeResolver $handlingTime
     ) {
     }
 
@@ -448,6 +450,10 @@ class OrderService
      * Server-side projection of when the order should arrive, so the model
      * never does calendar arithmetic. Null when the order can't be delivered
      * (cancelled/closed/on hold) — the status explains that on its own.
+     *
+     * Handling is the longest among the order's items: a product with its own
+     * handling time holds the whole parcel (`extended_handling`), and the
+     * merchant can keep dates away from such orders altogether.
      */
     private function deliveryEstimate(OrderInterface $order, string $fulfilment, ?string $shippedAt): ?array
     {
@@ -469,17 +475,23 @@ class OrderService
         );
 
         $today = $this->deliveryWindows->today();
-        $handlingDays = $this->deliveryWindows->handlingDays();
+        $handling = $this->handlingTime->forOrder($order);
+        $format = $this->deliveryWindows->estimateFormatFor($handling['extended']);
         $estimate = [
             'today' => $today,
             'basis' => $fulfilment === 'not_shipped' ? 'order_placed' : 'shipped',
             'basis_date' => $fulfilment === 'not_shipped' ? (string) $order->getCreatedAt() : (string) $shippedAt,
-            'handling_days' => $handlingDays,
+            // The long end: what older gateways read as "the" handling time.
+            'handling_days' => $handling['max_days'],
+            'handling_min_days' => $handling['min_days'],
+            'handling_max_days' => $handling['max_days'],
+            'extended_handling' => $handling['extended'],
+            'extended_handling_skus' => $handling['slow_skus'],
             'transit_min_days' => $window['min_days'] ?? null,
             'transit_max_days' => $window['max_days'] ?? null,
             'business_days' => $window['business_days'] ?? $this->deliveryWindows->isBusinessDays(),
             'delivery_days' => $window['delivery_days'] ?? $this->deliveryWindows->deliveryDays(),
-            'estimate_format' => $this->deliveryWindows->estimateFormat(),
+            'estimate_format' => $format,
             'source' => $window['source'] ?? null,
             'earliest' => null,
             'latest' => null,
@@ -490,14 +502,16 @@ class OrderService
             return $estimate;
         }
 
+        $unshipped = $estimate['basis'] === 'order_placed';
         $range = $this->deliveryWindows->project(
             $estimate['basis_date'],
-            $estimate['basis'] === 'order_placed' ? $handlingDays : 0,
-            $window
+            $unshipped ? $handling['min_days'] : 0,
+            $window,
+            $unshipped ? $handling['max_days'] : 0
         );
         // With the "days only" format the dates stay here: the assistant gets
         // the day counts and the late flag, never a calendar date to quote.
-        if ($this->deliveryWindows->showsDates()) {
+        if ($format === EstimateFormat::DATES) {
             $estimate['earliest'] = $range['earliest'];
             $estimate['latest'] = $range['latest'];
         }

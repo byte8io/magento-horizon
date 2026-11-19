@@ -40,6 +40,8 @@ class Config
     public const WIDGET_DEFAULT_OFFSET = 24;
     private const WIDGET_MAX_OFFSET = 400;
     private const XML_PATH_DELIVERY_HANDLING_DAYS = 'byte8_horizon/delivery/handling_days';
+    private const XML_PATH_DELIVERY_HANDLING_DAYS_MAX = 'byte8_horizon/delivery/handling_days_max';
+    private const XML_PATH_DELIVERY_SLOW_ITEM_FORMAT = 'byte8_horizon/delivery/slow_item_format';
     private const XML_PATH_DELIVERY_BUSINESS_DAYS = 'byte8_horizon/delivery/business_days';
     private const XML_PATH_DELIVERY_ESTIMATE_FORMAT = 'byte8_horizon/delivery/estimate_format';
     private const XML_PATH_DELIVERY_TRANSIT_WINDOWS = 'byte8_horizon/delivery/transit_windows';
@@ -103,10 +105,39 @@ class Config
 
     /**
      * Days between order placement and dispatch, used when an order hasn't shipped yet.
+     * The short end of the range when a longer one is set (see getDeliveryHandlingDaysMax).
      */
     public function getDeliveryHandlingDays(): int
     {
         return max(0, (int) $this->value(self::XML_PATH_DELIVERY_HANDLING_DAYS));
+    }
+
+    /**
+     * Long end of the store's handling time ("2 to 3 days"). Empty means
+     * dispatch takes a fixed number of days, so it equals the short end.
+     */
+    public function getDeliveryHandlingDaysMax(): int
+    {
+        $min = $this->getDeliveryHandlingDays();
+        $raw = $this->value(self::XML_PATH_DELIVERY_HANDLING_DAYS_MAX);
+        if ($raw === null || trim((string) $raw) === '') {
+            return $min;
+        }
+        return max($min, (int) $raw);
+    }
+
+    /**
+     * `dates` or `days` for orders holding a product whose own handling time
+     * is longer than the store's. Only ever narrows: a store that shows day
+     * counts never gets dates back for slow items.
+     */
+    public function getDeliverySlowItemFormat(): string
+    {
+        if (!$this->showsDeliveryDates()) {
+            return EstimateFormat::DAYS;
+        }
+        $value = (string) $this->value(self::XML_PATH_DELIVERY_SLOW_ITEM_FORMAT);
+        return $value === EstimateFormat::DATES ? EstimateFormat::DATES : EstimateFormat::DAYS;
     }
 
     /**

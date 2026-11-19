@@ -28,6 +28,7 @@
             </assistant>
             <delivery>
                 <handling_days>1</handling_days>
+                <slow_item_format>days</slow_item_format>
                 <business_days>mon_fri</business_days>
                 <estimate_format>dates</estimate_format>
                 <transit_windows/>

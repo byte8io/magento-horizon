@@ -120,6 +120,19 @@
                     <validate>validate-digits</validate>
                     <comment>Days between an order being placed and being dispatched. Used for orders that haven't shipped yet and for quotes to new shoppers.</comment>
                 </field>
+                <field id="handling_days_max" translate="label comment" type="text" sortOrder="12" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Handling Time, Up To (days)</label>
+                    <validate>validate-digits</validate>
+                    <comment>Optional. Fill in when dispatch takes a range, e.g. 2 above and 3 here for "2 to 3 days". Leave empty for a fixed handling time.</comment>
+                </field>
+                <field id="slow_item_format" translate="label comment" type="select" sortOrder="27" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Tell Shoppers, Slow Items</label>
+                    <source_model>Byte8\Horizon\Model\Config\Source\EstimateFormat</source_model>
+                    <comment><![CDATA[For orders and quotes with a product that has its own, longer handling time (product attributes <strong>Handling Time, From / Up To</strong>, e.g. made to order or sent by a supplier). The whole order waits for its slowest item. Number of days only keeps the assistant from naming an arrival date for them, also after dispatch.]]></comment>
+                    <depends>
+                        <field id="estimate_format">dates</field>
+                    </depends>
+                </field>
                 <field id="business_days" translate="label comment" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Delivery Days</label>
                     <source_model>Byte8\Horizon\Model\Config\Source\DeliveryDays</source_model>

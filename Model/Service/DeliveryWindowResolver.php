@@ -93,9 +93,20 @@ class DeliveryWindowResolver
         return null;
     }
 
+    /**
+     * The store's handling time, short end (the only one when it is fixed).
+     */
     public function handlingDays(): int
     {
         return $this->config->getDeliveryHandlingDays();
+    }
+
+    /**
+     * The store's handling time, long end.
+     */
+    public function handlingDaysMax(): int
+    {
+        return $this->config->getDeliveryHandlingDaysMax();
     }
 
     public function isBusinessDays(): bool
@@ -125,6 +136,15 @@ class DeliveryWindowResolver
     }
 
     /**
+     * `dates` | `days` for one order or quote: a product with its own, longer
+     * handling time can switch it to day counts (Tell Shoppers, Slow Items).
+     */
+    public function estimateFormatFor(bool $extendedHandling): string
+    {
+        return $extendedHandling ? $this->config->getDeliverySlowItemFormat() : $this->estimateFormat();
+    }
+
+    /**
      * Today's date in the store timezone (Y-m-d).
      */
     public function today(): string
@@ -137,18 +157,20 @@ class DeliveryWindowResolver
      *
      * @param string $basisDate  Any value DateTime understands (DB timestamps are UTC).
      * @param int $leadDays      Days to add before transit starts (handling), 0 when already shipped.
+     * @param int|null $leadMaxDays Long end when handling is a range; the latest date counts from it.
      * @return array{earliest:string,latest:string}
      */
-    public function project(string $basisDate, int $leadDays, array $window): array
+    public function project(string $basisDate, int $leadDays, array $window, ?int $leadMaxDays = null): array
     {
         $basis = $this->timezone->date(new \DateTime($basisDate, new \DateTimeZone('UTC')));
         $basis->setTime(0, 0, 0);
         $mode = $this->windowDays($window);
 
         $start = $this->addDays($basis, $leadDays, $mode);
+        $latestStart = $this->addDays($basis, max($leadDays, $leadMaxDays ?? $leadDays), $mode);
         return [
             'earliest' => $this->addDays($start, (int) $window['min_days'], $mode)->format('Y-m-d'),
-            'latest' => $this->addDays($start, (int) $window['max_days'], $mode)->format('Y-m-d'),
+            'latest' => $this->addDays($latestStart, (int) $window['max_days'], $mode)->format('Y-m-d'),
         ];
     }
 
