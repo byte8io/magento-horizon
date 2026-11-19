@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.9.0](https://github.com/byte8io/magento-horizon/compare/v1.8.1...v1.9.0) (2026-11-19)
+
+
+### Features
+
+* connect each store view to its own Horizon store ([2aa9b81](https://github.com/byte8io/magento-horizon/commit/2aa9b81c345a1cbcb15190d20f93c6be6f574f8d))
+* delivery days Mon-Fri / Mon-Sat / every day, and day-count-only estimates ([a11b511](https://github.com/byte8io/magento-horizon/commit/a11b511cb63cb85f545b3016994d6b566385ebd0))
+* integration diagnostics for support agents behind a dedicated diagnostics key ([c7ad8ee](https://github.com/byte8io/magento-horizon/commit/c7ad8eeb8dd698eb2eff0deb87f3d3c027c68710))
+* per-product handling time and a handling range on delivery estimates ([760171e](https://github.com/byte8io/magento-horizon/commit/760171e909cbfbeb396888799489a0ed96eca3ff))
+* report authorised payments as authorized, not unpaid ([1af3b3c](https://github.com/byte8io/magento-horizon/commit/1af3b3c6323a61f6d9f8cc2443303f26101e86af))
+
 ## [1.8.1](https://github.com/byte8io/magento-horizon/compare/v1.8.0...v1.8.1) (2026-11-12)
 
 
