@@ -212,8 +212,9 @@ class ProductIndexer
      * Full emulation also loads the view's theme translations, which cannot be
      * resolved while `setup:upgrade` runs (a reindex triggered from a module's
      * recurring setup script fails with "Required parameter 'theme_dir' was not
-     * passed"). In that case only the current store is switched, which is what
-     * the row data depends on.
+     * passed"), and it needs an area code, which a console command may not
+     * have set. In those cases only the current store is switched, which is
+     * what the row data depends on.
      */
     private function enterStore(int $storeId): callable
     {
@@ -224,7 +225,11 @@ class ProductIndexer
                 $this->emulation->stopEnvironmentEmulation();
             };
         } catch (\Throwable $e) {
-            $this->emulation->stopEnvironmentEmulation();
+            try {
+                $this->emulation->stopEnvironmentEmulation();
+            } catch (\Throwable $ignored) {
+                // the emulation failed before it had anything to restore
+            }
         }
 
         $previous = (int) $this->storeManager->getStore()->getId();

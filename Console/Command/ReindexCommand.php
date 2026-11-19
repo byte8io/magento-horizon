@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Byte8\Horizon\Console\Command;
 
 use Byte8\Horizon\Model\Indexer\Product\Action;
+use Magento\Framework\App\Area;
 use Magento\Framework\App\ResourceConnection;
+use Magento\Framework\App\State;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Indexer\IndexerRegistry;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -21,7 +24,8 @@ class ReindexCommand extends Command
 {
     public function __construct(
         private readonly IndexerRegistry $indexerRegistry,
-        private readonly ResourceConnection $resourceConnection
+        private readonly ResourceConnection $resourceConnection,
+        private readonly State $appState
     ) {
         parent::__construct();
     }
@@ -37,6 +41,13 @@ class ReindexCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $output->writeln('<info>Horizon: rebuilding product index...</info>');
+
+        // The indexer emulates each store view, which needs an area to restore.
+        try {
+            $this->appState->setAreaCode(Area::AREA_ADMINHTML);
+        } catch (LocalizedException $e) {
+            // already set
+        }
 
         try {
             $this->indexerRegistry->get(Action::INDEXER_ID)->reindexAll();
