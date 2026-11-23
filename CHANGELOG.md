@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.10.0](https://github.com/byte8io/magento-horizon/compare/v1.9.0...v1.10.0) (2026-11-23)
+
+
+### Features
+
+* allow the assistant's browser-check frame in the storefront CSP ([3d2659e](https://github.com/byte8io/magento-horizon/commit/3d2659ec989445c3e353e17e85044de070d2cc7b))
+
+
+### Bug Fixes
+
+* horizon:reindex fails with "Area code is not set" ([1824d8d](https://github.com/byte8io/magento-horizon/commit/1824d8d15debab4b5123f892266be1cfe27b4af9))
+* reindex during setup:upgrade no longer fails on store emulation ([79b4fa6](https://github.com/byte8io/magento-horizon/commit/79b4fa6f86f54d95f2da277072c7a9ee052ef637))
+
 ## [1.9.0](https://github.com/byte8io/magento-horizon/compare/v1.8.1...v1.9.0) (2026-11-19)
 
 
