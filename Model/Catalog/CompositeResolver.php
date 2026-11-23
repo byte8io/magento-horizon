@@ -46,6 +46,9 @@ class CompositeResolver
         }
     }
 
+    /** Store view the configurable option labels were last read for. */
+    private ?int $optionLabelStoreId = null;
+
     private function configurable(Product $product, array $own): array
     {
         $type = $product->getTypeInstance();
@@ -53,8 +56,20 @@ class CompositeResolver
             return $own;
         }
 
+        $attributes = $type->getConfigurableAttributesAsArray($product);
+        $storeId = (int) $product->getStoreId();
+        if ($storeId !== $this->optionLabelStoreId) {
+            // Magento reads the option labels before it moves the shared
+            // attribute to the product's store view, so the first product
+            // after a change of store view comes back with the previous
+            // view's labels. Reading again returns the right ones.
+            $this->optionLabelStoreId = $storeId;
+            $type->resetConfigurableAttributes($product);
+            $attributes = $type->getConfigurableAttributesAsArray($product);
+        }
+
         $options = [];
-        foreach ($type->getConfigurableAttributesAsArray($product) as $attribute) {
+        foreach ($attributes as $attribute) {
             $values = [];
             foreach ($attribute['values'] ?? [] as $value) {
                 $label = trim((string) ($value['label'] ?? ''));

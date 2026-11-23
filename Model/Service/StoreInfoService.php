@@ -206,7 +206,8 @@ class StoreInfoService
         try {
             foreach ($this->paymentMethodList->getActiveList($storeId) as $method) {
                 $title = (string) $method->getTitle();
-                if ($title === '') {
+                // "free" is the zero-total checkout, not a way to pay
+                if ($title === '' || $method->getCode() === 'free') {
                     continue;
                 }
                 $methods[] = ['code' => (string) $method->getCode(), 'title' => $title];
