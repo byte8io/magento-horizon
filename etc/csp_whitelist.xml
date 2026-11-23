@@ -12,5 +12,11 @@
                 <value id="byte8_horizon_gateway" type="host">horizon.byte8.io</value>
             </values>
         </policy>
+        <!-- The assistant's browser check (bot protection) runs in a frame served by the gateway. -->
+        <policy id="frame-src">
+            <values>
+                <value id="byte8_horizon_gateway" type="host">horizon.byte8.io</value>
+            </values>
+        </policy>
     </policies>
 </csp_whitelist>
