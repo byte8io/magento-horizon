@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.1](https://github.com/byte8io/magento-horizon/compare/v1.10.0...v1.10.1) (2026-11-24)
+
+
+### Bug Fixes
+
+* assistant knows every attribute the product page shows ([d947edc](https://github.com/byte8io/magento-horizon/commit/d947edcd7f27b141558a4933628940857ef469df))
+* first configurable product of a store view carried the previous view's option labels ([ed6f188](https://github.com/byte8io/magento-horizon/commit/ed6f1884714ffb220421ec8c395ce6f15338647d))
+
 ## [1.10.0](https://github.com/byte8io/magento-horizon/compare/v1.9.0...v1.10.0) (2026-11-23)
 
 
